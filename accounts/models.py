@@ -1,86 +1,139 @@
+from __future__ import annotations
+from typing import Optional
 from django.db import models
-from django.contrib.auth import get_user_model
-from django.contrib.auth.backends import BaseBackend
-from django.templatetags.static import static
-
-# Using Django's built-in user model
-# https://docs.djangoproject.com/en/3.0/topics/auth/default/#user-objects
-# https://docs.djangoproject.com/en/3.0/ref/contrib/auth/
-# https://github.com/django/django/blob/master/django/contrib/auth/base_user.py
-# https://github.com/django/django/blob/master/django/contrib/auth/models.py
-
-User = get_user_model()
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager
+from django.contrib.auth.hashers import make_password
+from django.forms import ValidationError
+from django.http import HttpRequest
+from django.utils import timezone
 
 
-def user_directory_path(instance, filename):
-  # File will be uploaded to MEDIA_ROOT/accounts/user_<id>/<filename>
-  return 'accounts/user_{0}/{1}'.format(instance.user.id, filename)
+# Extending from Django's built-in user model.
+# See: https://docs.djangoproject.com/en/4.2/ref/contrib/auth/#user-model
+# See: https://docs.djangoproject.com/en/4.2/topics/auth/customizing/#substituting-a-custom-user-model
+# See: https://docs.djangoproject.com/en/4.2/topics/auth/customizing/#specifying-a-custom-user-model
 
 
-class Profile(models.Model):
-  ''' The profile table.
-  '''
-  user = models.OneToOneField(User, on_delete=models.CASCADE)
-  email_to_be_verified = models.EmailField(blank=True)
-  email_verification_token = models.BinaryField(max_length=128, blank=True)
+class UserManager(BaseUserManager):
+  def create_user(self, username: str, password: Optional[str] = None, **extra_fields) -> User:
+    user = self.model(username=username, **extra_fields)
+    user.password = make_password(password)
+    user.save()
+    return user
+
+  def create_superuser(self, username: str, password: Optional[str] = None, **extra_fields) -> User:
+    extra_fields.setdefault('admin', True)
+    return self.create_user(username, password, **extra_fields)
+
+
+def username_validator(username: str) -> None:
+  if username.strip() != username:
+    raise ValidationError('Username must not start with or end with a whitespace.')
+  if len(username) < 4:
+    raise ValidationError('Username must be at least 4 characters long.')
+
+
+def user_directory_path(self: models.Model, filename: str) -> str:
+  return 'accounts/user_{0}/{1}'.format(self.pk, filename)
+
+
+class User(AbstractBaseUser):
+  username = models.CharField(max_length=150, unique=True, validators=[username_validator])
+  email = models.EmailField()
+
+  admin = models.BooleanField(default=False)
+
+  class Privilege(models.IntegerChoices):
+    ADMIN = 1, '审计'
+    PRESIDENT = 2, '主席'
+    COMMITTEE = 3, '执委'
+    MEMBER = 4, '部员'
+    VISITOR = 5, '访客'
+  approval_level = models.IntegerField(choices=Privilege.choices, default=Privilege.VISITOR)
+  application_level = models.IntegerField(choices=Privilege.choices, default=Privilege.VISITOR)
+
+  class Department(models.IntegerChoices):
+    PRESIDENT = 0, '主席团'
+    SECRETARY = 1, '秘书处'
+    TREASURER = 2, '财务处'
+    CAREERS = 3, '事业部'
+    MEDIA = 4, '媒体部'
+    SPONSORSHIP = 5, '赞助部'
+    ARTS = 6, '文艺部'
+    CULTURE = 7, '文化部'
+    ENTERTAINMENT = 8, '外联部'
+    SPORTS = 9, '体育部'
+    GENERAL = 10, '未分配'
+  department = models.IntegerField(choices=Department.choices, default=Department.GENERAL)
+
+  name = models.CharField(max_length=150, blank=True)
   avatar = models.ImageField(upload_to=user_directory_path, blank=True)
   bio = models.TextField(blank=True)
+  date_joined = models.DateTimeField(default=timezone.now)
 
-  def __str__(self):
-    return str(self.user) + ": " + self.bio
+  objects = UserManager()
 
-  def get_avatar(self):
-    return self.avatar.url if self.avatar else static('accounts/default_avatar.png')
+  REQUIRED_FIELDS = []
+  USERNAME_FIELD = 'username'
+  EMAIL_FIELD = 'email'
 
+  def __str__(self) -> str:
+    return str(self.name)
+
+  # The following properties are required by the Django administration site.
+
+  @property
+  def is_staff(self) -> bool:
+    return self.admin
+
+  @property
+  def is_active(self) -> bool:
+    return True
+
+  def has_perm(self, perm: str, obj=None) -> bool:
+    return self.admin
+
+  def has_module_perms(self, app_label: str) -> bool:
+    return self.admin
+  
 
 # Adding custom authentication backend, modified from Django's built-in ModelBackend
-# https://docs.djangoproject.com/en/3.0/topics/auth/customizing/#writing-an-authentication-backend
-# https://github.com/django/django/blob/master/django/contrib/auth/backends.py
+# https://docs.djangoproject.com/en/4.2/topics/auth/customizing/#writing-an-authentication-backend
+# https://github.com/django/django/blob/main/django/contrib/auth/backends.py
+
+# This import must be put after the declaration of `class User`.
+from django.contrib.auth.backends import BaseBackend  # nopep8
 
 
-class EmailAuthBackend(BaseBackend):
-  ''' Additional authentication backend that checks input username against email address (so users can log in with email addresses)
-  '''
+class AuthBackend(BaseBackend):
+  def user_can_authenticate(self, user: User) -> bool:
+    return user.is_active
 
-  def authenticate(self, request, username=None, password=None):
-    if username is None or password is None:
-      return
+  def get_user(self, pk: int) -> Optional[User]:
     try:
-      user = User._default_manager.get(email__iexact=username)
-    except User.DoesNotExist:
-      # Run the default password hasher once to reduce the timing
-      # difference between an existing and a nonexistent user (#20760).
-      User().set_password(password)
-    else:
-      if user.check_password(password) and self.user_can_authenticate(user):
-        return user
-
-  def user_can_authenticate(self, user):
-    ''' Reject users with is_active = False. Custom user models that don't have that attribute are allowed.
-    '''
-    is_active = getattr(user, 'is_active', None)
-    return is_active or is_active is None
-
-  def get_user(self, user_id):
-    try:
-      user = User._default_manager.get(pk=user_id)
+      user = User.objects.get(pk=pk)
     except User.DoesNotExist:
       return None
-    return user if self.user_can_authenticate(user) else None
+    if not self.user_can_authenticate(user):
+      return None
+    return user
 
-
-def register(username, password, email=None):
-  ''' Sign up procedure
-  '''
-
-  # 这玩意会把"！"变成"!", 还是不用了吧
-  # username = UserModel.normalize_username(username) # Normalize visually identical Unicode characters
-
-  try:
-    user = User._default_manager.get_by_natural_key(username)
-  except User.DoesNotExist:
-    user = User._default_manager.create_user(username, email, password)
-    Profile.objects.create(user=user)
-    return user  # Success
-
-  return None  # The same username have been registered
+  def authenticate(
+    self,
+    request: HttpRequest,
+    username: Optional[str] = None,
+    password: Optional[str] = None,
+    **kwargs
+  ) -> Optional[User]:
+    if username is None or password is None:
+      return None
+    try:
+      user = User.objects.get(username=username)
+    except User.DoesNotExist:
+      User().check_password(password)
+      return None
+    if not user.check_password(password):
+      return None
+    if not self.user_can_authenticate(user):
+      return None
+    return user

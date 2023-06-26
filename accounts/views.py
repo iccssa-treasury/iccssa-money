@@ -1,107 +1,113 @@
-from django.http import HttpResponseRedirect
-from django.shortcuts import render, get_object_or_404
-from django.urls import reverse, reverse_lazy
-from django.contrib import auth, messages
-from django.contrib.auth.decorators import login_required
-from .models import register, User, Profile
+from django.contrib import auth
+from django.contrib.auth.hashers import make_password
+from django.shortcuts import get_object_or_404
+from rest_framework.request import Request
+from rest_framework.response import Response
+from rest_framework import views, permissions, status
+from .serializers import *
 
 
-def index(request):
-  return render(request, 'accounts/index.html')
+# API endpoints that implement L-CRUD (list, create, retrieve, update, destory).
+# See: https://www.django-rest-framework.org/api-guide/serializers/
+# See: https://www.django-rest-framework.org/api-guide/views/
+# See: https://www.django-rest-framework.org/api-guide/generic-views/
+# See: https://www.django-rest-framework.org/api-guide/viewsets/
 
 
-def login(request):
-  error_message = None
+class UsersView(views.APIView):
+  permission_classes = [permissions.AllowAny]  # Disable DRF permission checking, use our own logic.
 
-  # Check if parameters are given
-  username, password = request.POST.get('username', ''), request.POST.get('password', '')
-  if username != '' and password != '':
-    user = auth.authenticate(request, username=username, password=password)  # Authenticate
-    if user is not None:  # Authentication successful
-      auth.login(request, user)  # Start session
-      if request.POST.get('redirect', '') != '':
-        return HttpResponseRedirect(request.POST['redirect'])  # Redirect according to parameters
-      return HttpResponseRedirect(reverse('accounts:index'))  # Redirect to main page
-    else:
-      error_message = 'Invalid username or password'
+  # List all users (staff only).
+  def get(self, request: Request) -> Response:
+    if not (isinstance(request.user, User) and request.user.admin):
+      self.permission_denied(request)
+    queryset = User.objects.order_by('pk')
+    return Response(user_serializer(queryset, request=request, refl=False, many=True).data, status.HTTP_200_OK)
 
-  # Send login form
-  return render(request, 'accounts/login.html', {
-    'redirect': request.GET.get('redirect', ''),
-    'error_message': error_message,
-  })
+  # Create new user (i.e. sign up).
+  def post(self, request: Request) -> Response:
+    serializer = user_serializer(data=request.data, request=request, refl=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.validated_data['password'] = make_password(serializer.validated_data['password'])
+    serializer.save()
+    return Response(serializer.data, status.HTTP_201_CREATED)
 
 
-def logout(request):
-  auth.logout(request)  # End session
-  return HttpResponseRedirect(reverse('accounts:index'))  # Redirect to main page
+class UserView(views.APIView):
+  permission_classes = [permissions.AllowAny]  # Disable DRF permission checking, use our own logic.
+
+  # Retrieve user data.
+  def get(self, request: Request, pk: int) -> Response:
+    user = get_object_or_404(User, pk=pk)
+    refl = isinstance(request.user, User) and request.user.pk == user.pk
+    serializer = user_serializer(user, request=request, refl=refl)
+    return Response(serializer.data, status.HTTP_200_OK)
+
+  # Partially update user data.
+  def patch(self, request: Request, pk: int) -> Response:
+    user = get_object_or_404(User, pk=pk)
+    refl = isinstance(request.user, User) and request.user.pk == user.pk
+    serializer = user_serializer(user, request=request, refl=refl, data=request.data, partial=True)  # TODO
+    serializer.initial_data['username'] = user.username
+    serializer.is_valid(raise_exception=True)
+    serializer.validated_data['password'] = make_password(serializer.validated_data['password'])
+    serializer.save()
+    return Response(serializer.data, status.HTTP_200_OK)
+
+  # Delete user (staff only).
+  def delete(self, request: Request, pk: int) -> Response:
+    if not (isinstance(request.user, User) and request.user.admin):
+      self.permission_denied(request)
+    user = get_object_or_404(User, pk=pk)
+    user.delete()
+    return Response(None, status.HTTP_200_OK)
 
 
-def signup(request):
-  error_message = None
+class SessionView(views.APIView):
+  permission_classes = [permissions.AllowAny]  # Disable DRF permission checking, use our own logic.
 
-  username = request.POST.get('username', '')
-  password = request.POST.get('password', '')
-  email = request.POST.get('email', None)
+  # Retrieve currently active session (if exists).
+  def get(self, request: Request) -> Response:
+    if not isinstance(request.user, User):
+      return Response(None, status.HTTP_200_OK)
+    serializer = user_serializer(request.user, request=request, refl=True)
+    return Response(serializer.data, status.HTTP_200_OK)
 
-  # Check if parameters are given
-  if username != '' and password != '':
-    user = register(username, password, email)  # Register
-    if user is not None:  # Registration successful
-      auth.login(request, user)  # Start session
-      messages.add_message(request, messages.SUCCESS, 'User account created!')
-      return HttpResponseRedirect(request.POST.get('redirect', reverse('accounts:index')))
-    else:
-      error_message = 'The same username have been registered. Please try another one.'
+  # Create new session (i.e. sign in).
+  def post(self, request: Request):
+    credentials = CredentialSerializer(data=request.data)
+    credentials.is_valid(raise_exception=True)
+    user = auth.authenticate(request, **credentials.validated_data)
+    if user is None:
+      return Response({'detail': 'Incorrect username or password.'}, status.HTTP_401_UNAUTHORIZED)
+    auth.login(request, user)
+    serializer = user_serializer(request.user, request=request, refl=True)
+    return Response(serializer.data, status.HTTP_201_CREATED)
 
-  # Send signup form
-  return render(request, 'accounts/signup.html', {
-    'redirect': request.GET.get('redirect', ''),
-    'error_message': error_message,
-  })
-
-
-def get_avatar_filename(user, f):
-  file_extension_allowlist = ['.jpg', '.jpeg', '.png', '.gif', '.webp']  # Allowed image formats
-  ext = ''
-  for x in file_extension_allowlist:
-    if f.name.endswith(x):
-      ext = x
-  if ext == '':
-    return None
-  return 'avatar' + ext
+  # Delete session (i.e. sign out).
+  def delete(self, request: Request) -> Response:
+    auth.logout(request)
+    return Response(None, status.HTTP_200_OK)
 
 
-@login_required(redirect_field_name='redirect', login_url=reverse_lazy('accounts:login'))
-def me(request):
-  user = get_object_or_404(User, pk=request.user.id)
-  profile = get_object_or_404(Profile, user=request.user)
+class UserMessagesView(views.APIView):
+  permission_classes = [permissions.AllowAny]  # Disable DRF permission checking, use our own logic.
 
-  image_upload = request.FILES.get('image_upload', None)
-  if image_upload is not None:
-    filename = get_avatar_filename(request.user, image_upload)
-    if filename is None:
-      return HttpResponseRedirect(reverse('accounts:me'))
-    profile.avatar.save(filename, image_upload, save=True)  # Save file & update database
-    return HttpResponseRedirect(reverse('accounts:me'))
+  # List all messages.
+  def get(self, request: Request) -> Response:
+    if not isinstance(request.user, User):
+      return Response(None, status.HTTP_200_OK)
+    queryset_send = Message.objects.filter(sender=request.user.pk)
+    queryset_recv = Message.objects.filter(receiver=request.user.pk)
+    queryset = queryset_send.union(queryset_recv).order_by('-date')
+    return Response(MessageSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
-  bio = request.POST.get('bio', None)
-  if bio is not None:
-    user.first_name = request.POST.get('first_name', '')
-    user.last_name = request.POST.get('last_name', '')
-    profile.bio = request.POST.get('bio', '')
-    user.save()
-    profile.save()
-    return HttpResponseRedirect(reverse('accounts:me'))
-
-  email = request.POST.get('email', None)
-  if email is not None:
-    # TODO: email verification
-    return HttpResponseRedirect(reverse('accounts:me'))
-
-  return render(request, 'accounts/me.html', {})
-
-
-def profile(request, username):
-  user = get_object_or_404(User, username__exact=username)
-  return render(request, 'accounts/profile.html', {'user': user})
+  # Create new message to a given user.
+  def post(self, request: Request) -> Response:
+    if not isinstance(request.user, User):
+      return Response(None, status.HTTP_200_OK)
+    serializer = MessageSerializer(data=request.data)
+    serializer.initial_data['sender'] = request.user.pk
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data, status.HTTP_201_CREATED)

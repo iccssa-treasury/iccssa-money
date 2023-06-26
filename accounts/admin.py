@@ -1,20 +1,9 @@
+# See: https://docs.djangoproject.com/en/4.2/topics/auth/customizing/#custom-users-admin-full-example
+
 from django.contrib import admin
+# from django.contrib.auth.models import Group
+from django.contrib.admin import ModelAdmin
+from .models import *
 
-'''
-from .models import User, Session
-
-class UserAdmin(admin.ModelAdmin):
-  fieldsets = [
-    (None, {'fields': ['username', 'email']}),
-    ('Additional information', {'fields': ['bio'], 'classes': ['collapse']})
-  ]
-  list_display = ['username', 'email', 'time_registered', 'email_verified']
-  list_filter = ['time_registered']
-  search_fields = ['username', 'email']
-
-admin.site.register(User, UserAdmin)
-'''
-
-from .models import Profile
-
-admin.site.register(Profile)
+admin.site.register(User, ModelAdmin)
+# admin.site.unregister(Group)  # This is not needed anymore.
