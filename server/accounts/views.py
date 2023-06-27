@@ -88,26 +88,3 @@ class SessionView(views.APIView):
   def delete(self, request: Request) -> Response:
     auth.logout(request)
     return Response(None, status.HTTP_200_OK)
-
-
-class UserMessagesView(views.APIView):
-  permission_classes = [permissions.AllowAny]  # Disable DRF permission checking, use our own logic.
-
-  # List all messages.
-  def get(self, request: Request) -> Response:
-    if not isinstance(request.user, User):
-      return Response(None, status.HTTP_200_OK)
-    queryset_send = Message.objects.filter(sender=request.user.pk)
-    queryset_recv = Message.objects.filter(receiver=request.user.pk)
-    queryset = queryset_send.union(queryset_recv).order_by('-date')
-    return Response(MessageSerializer(queryset, many=True).data, status.HTTP_200_OK)
-
-  # Create new message to a given user.
-  def post(self, request: Request) -> Response:
-    if not isinstance(request.user, User):
-      return Response(None, status.HTTP_200_OK)
-    serializer = MessageSerializer(data=request.data)
-    serializer.initial_data['sender'] = request.user.pk
-    serializer.is_valid(raise_exception=True)
-    serializer.save()
-    return Response(serializer.data, status.HTTP_201_CREATED)

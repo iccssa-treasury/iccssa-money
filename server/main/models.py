@@ -48,14 +48,14 @@ class Application(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     reason = models.TextField()
 
-    class Approval(models.IntegerChoices):
+    class Level(models.IntegerChoices):
         DECLINED = -1, '已取消'
         ACCEPTED = 0, '已通过'
         AWAIT_ADMIN = 1, '待财务审批'
         AWAIT_PRESIDENT = 2, '待主席审批'
         AWAIT_COMMITTEE = 3, '待部门审批'
         AWAIT_MEMBER = 4, '待成员审批'
-    approval = models.IntegerField(choices=Approval.choices, default=Approval.AWAIT_MEMBER)
+    level = models.IntegerField(choices=Level.choices, default=Level.AWAIT_MEMBER)
 
     def status(self):
         # TODO: Implement this
@@ -64,8 +64,8 @@ class Application(models.Model):
     def __str__(self):
         return f'[{self.get_department_display()}] - {self.user} {self.get_category_display()} {self.amount} {self.get_currency_display()}'
 
-def get_upload_path(instance, filename):
-    return f'uploads/{instance.user.username}/{filename}'
+def user_directory_path(self: models.Model, filename: str) -> str:
+  return 'accounts/user_{0}/{1}'.format(self.pk, filename)
 
 class Message(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)
@@ -73,7 +73,7 @@ class Message(models.Model):
 
     timestamp = models.DateTimeField(auto_now_add=True)
     contents = models.TextField(max_length=20, null=True, blank=True)
-    file = models.FileField(upload_to=get_upload_path, null=True, blank=True)
+    file = models.FileField(upload_to=user_directory_path, null=True, blank=True)
 
     def __str__(self):
         return f'{self.user} - "{self.contents[:20]}" [{self.file}]'
