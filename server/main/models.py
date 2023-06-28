@@ -1,8 +1,6 @@
 from django.db import models
-from django.contrib.auth import get_user_model
-from accounts.models import Department
-
-User = get_user_model()
+from django.core.validators import MinLengthValidator
+from accounts.models import User, Department
 
 # Application category
 class Category(models.IntegerChoices):
@@ -12,12 +10,13 @@ class Category(models.IntegerChoices):
 
 # Application approval level
 class Level(models.IntegerChoices):
-        DECLINED = -1, '已取消'
-        ACCEPTED = 0, '已通过'
-        AWAIT_ADMIN = 1, '待财务审批'
-        AWAIT_PRESIDENT = 2, '待主席审批'
-        AWAIT_COMMITTEE = 3, '待部门审批'
-        AWAIT_MEMBER = 4, '待成员审批'
+    DECLINED = -1, '已取消'
+    COMPLETED = 0, '已完成'
+    ACCEPTED = 1, '已通过'
+    AWAIT_ADMIN = 2, '待财务审批'
+    AWAIT_PRESIDENT = 3, '待主席审批'
+    AWAIT_COMMITTEE = 4, '待部门审批'
+    AWAIT_MEMBER = 5, '待成员审批'
 
 # Application user action
 class Action(models.IntegerChoices):
@@ -37,8 +36,8 @@ class Destination(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)
 
     name = models.CharField(max_length=100)
-    sort_code = models.CharField(max_length=6)
-    account_number = models.CharField(max_length=8)
+    sort_code = models.CharField(max_length=6, validators=[MinLengthValidator(6)])
+    account_number = models.CharField(max_length=8, validators=[MinLengthValidator(8)])
 
     personal = models.BooleanField(default=False)
     business = models.BooleanField(default=False)
@@ -60,11 +59,7 @@ class Application(models.Model):
     reason = models.TextField()
 
     level = models.IntegerField(choices=Level.choices, default=Level.AWAIT_MEMBER)
-
-    def status(self):
-        # TODO: Implement this
-        return 'Pending'
-
+    
     def __str__(self):
         return f'[{self.get_department_display()}] - {self.user} {self.get_category_display()} {self.amount} {self.get_currency_display()}'
 
@@ -77,7 +72,7 @@ class Event(models.Model):
 
     timestamp = models.DateTimeField(auto_now_add=True)
     action = models.IntegerField(choices=Action.choices, default=Action.SUPPORT)
-    contents = models.TextField(max_length=20, null=True, blank=True)
+    contents = models.TextField(null=True, blank=True)
     file = models.FileField(upload_to=user_directory_path, null=True, blank=True)
 
     def __str__(self):

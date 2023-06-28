@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from rest_framework.serializers import ValidationError
 from .models import *
 
 
@@ -7,7 +8,7 @@ class DestinationSerializer(serializers.ModelSerializer):
     model = Destination
     fields = [
       'pk', 'user', 'name', 'sort_code',
-      'account_number', 'business', 'personal', 'last_active',
+      'account_number', 'personal', 'business', 'last_usage',
     ]
     read_only_fields = ['pk']
 
@@ -15,9 +16,9 @@ class ApplicationSerializer(serializers.ModelSerializer):
   class Meta:
     model = Application
     fields = [
-      'pk', 'user', 'destination', 'department',
+      'pk', 'user', 'department', 'destination',
       'category', 'currency', 'amount', 'reason',
-      'approval',
+      'level',
     ]
     read_only_fields = ['pk']
 

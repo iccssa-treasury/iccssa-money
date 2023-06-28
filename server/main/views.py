@@ -5,6 +5,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import views, generics, permissions, status
 from .serializers import *
+from accounts.models import Privilege
+from .models import Level, Action
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +36,13 @@ class IsAdmin(permissions.BasePermission):
 #     return (isinstance(request.user, User) and request.user.admin) or request.method == 'POST'
 
 
-class DestinationsView(views.APIView):
+class DestinationsView(generics.ListCreateAPIView):
+  queryset = Destination.objects
+  serializer_class = DestinationSerializer
+  permission_classes = [IsAdmin]
+
+
+class UserDestinationsView(views.APIView):
   permission_classes = [permissions.AllowAny]
 
   # Retrieve all destinations for current user.
@@ -55,8 +63,8 @@ class DestinationsView(views.APIView):
       'name': request.data.get('name'),
       'sort_code': request.data.get('sort_code'),
       'account_number': request.data.get('account_number'),
-      'business': request.data.get('business'),
       'personal': request.data.get('personal'),
+      'business': request.data.get('business'),
     })
     serializer.is_valid(raise_exception=True)
     serializer.save()
@@ -79,16 +87,16 @@ def has_access_to_application(user: User, application: Application) -> bool:
   if not isinstance(user, User):
     return False
   # Admins can access all applications.
-  if user.approval_level <= 2:
+  if user.approval_level <= Privilege.PRESIDENT:
     return True
   # Commitees can access all applications from their department.
-  if user.approval_level == 2:
+  if user.approval_level == Privilege.COMMITTEE:
     return user.department == application.department or user == application.user
   # Members can only access their own applications.
   return user == application.user
 
 
-class AccessibleApplicationsView(views.APIView):
+class ApplicationsView(views.APIView):
   permission_classes = [permissions.AllowAny]
 
   # Retrieve all applications that the current user can access.
@@ -99,8 +107,8 @@ class AccessibleApplicationsView(views.APIView):
     return Response(ApplicationSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
 
-class ApplicationsView(views.APIView):
-  permission_classes = [IsAdmin]
+class UserApplicationsView(views.APIView):
+  permission_classes = [permissions.AllowAny]
 
   # Retrieve all applications created by current user.
   def get(self, request: Request) -> Response:
@@ -110,19 +118,34 @@ class ApplicationsView(views.APIView):
     queryset = Application.objects.filter(user=user).order_by('-timestamp')
     return Response(ApplicationSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
+
+def can_post_application(user: User, department: str) -> bool:
+  if not isinstance(user, User):
+    return False
+  if user.application_level >= Privilege.COMMITTEE:
+    return True
+  # Members can only submit applications for their own department.
+  return user.department == department
+
+
+class NewApplicationView(views.APIView):
+  permission_classes = [permissions.AllowAny]
+
   # Submit a new application.
   def post(self, request: Request) -> Response:
     user = request.user
-    if not isinstance(user, User):
+    department = request.data.get('department')
+    if not can_post_application(user, department):
       self.permission_denied(request)
     serializer = ApplicationSerializer(data={
       'user': user.pk,
-      'destination': request.data.get('destination'),
       'department': request.data.get('department'),
+      'destination': request.data.get('destination'),
       'category': request.data.get('category'),
       'currency': request.data.get('currency'),
       'amount': request.data.get('amount'),
       'reason': request.data.get('reason'),
+      'level': user.application_level,
     })
     serializer.is_valid(raise_exception=True)
     serializer.save()
@@ -141,6 +164,45 @@ class ApplicationView(views.APIView):
     return Response(DestinationSerializer(application).data, status.HTTP_200_OK)
 
 
+class EventsView(generics.ListCreateAPIView):
+  queryset = Event.objects
+  serializer_class = EventSerializer
+  permission_classes = [IsAdmin]
+
+
+def can_post_event(user: User, application: Application, action: int) -> bool:
+  if not has_access_to_application(user, application):
+    return False
+  if action == Action.SUPPORT:
+    # Anyone can support any application.
+    return True
+  elif action == Action.APPROVE or action == Action.REJECT:
+    # User can only approve or reject applications exactly one above their approval level.
+    if user.approval_level != application.level - 1:
+      return False
+    # Commitees can only approve or reject applications from their own department.
+    return user.approval_level <= Privilege.PRESIDENT or user.department == application.department
+  elif action == Action.CREATE or action == Action.CANCEL:
+    # User can only create or cancel their own incomplete applications.
+    return user == application.user and application.level > Level.COMPLETED
+  elif action == Action.COMPLETE:
+    # Only admins can issue payments.
+    return user.approval_level == Privilege.ADMIN and application.level == Level.ACCEPTED
+
+
+def result_application_level(user: User, action: int) -> int:
+  if action == Action.APPROVE:
+    return user.approval_level
+  elif action == Action.REJECT:
+    return Level.DECLINED
+  elif action == Action.CREATE:
+    return user.application_level + 1
+  elif action == Action.CANCEL:
+    return Level.DECLINED
+  elif action == Action.COMPLETE:
+    return Level.COMPLETED
+
+
 class ApplicationEventsView(generics.ListCreateAPIView):
   permission_classes = [permissions.AllowAny]
 
@@ -152,6 +214,27 @@ class ApplicationEventsView(generics.ListCreateAPIView):
       return Response([], status.HTTP_200_OK)
     queryset = Event.objects.filter(user=user, application=application).order_by('-timestamp')
     return Response(EventSerializer(queryset, many=True).data, status.HTTP_200_OK)
+
+  # Submit a new event for an applciation.
+  def post(self, request: Request) -> Response:
+    user = request.user
+    application = get_object_or_404(Application, pk=request.data.get('application'))
+    action = request.data.get('action')
+    if not can_post_event(user, application, action):
+      self.permission_denied(request)
+    serializer = ApplicationSerializer(data={
+      'user': user.pk,
+      'application': application.pk,
+      'action': action,
+      'contents': request.data.get('contents'),
+      'file': request.data.get('file'),
+    })
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    # Update application level.
+    application.level = result_application_level(user, action)
+    application.save()
+    return Response(serializer.data, status.HTTP_201_CREATED)
 
 
 class EventView(views.APIView):

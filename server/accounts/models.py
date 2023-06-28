@@ -29,7 +29,7 @@ class UserManager(BaseUserManager):
 def username_validator(username: str) -> None:
   if username.strip() != username:
     raise ValidationError('Username must not start with or end with a whitespace.')
-  if len(username) < 4:
+  if len(username) < 3:
     raise ValidationError('Username must be at least 4 characters long.')
 
 
