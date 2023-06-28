@@ -37,22 +37,16 @@ def user_directory_path(self: models.Model, filename: str) -> str:
   return 'accounts/user_{0}/{1}'.format(self.pk, filename)
 
 
-class User(AbstractBaseUser):
-  username = models.CharField(max_length=150, unique=True, validators=[username_validator])
-  email = models.EmailField()
+# User privilege level for application and approval
+class Privilege(models.IntegerChoices):
+  ADMIN = 1, '审计'
+  PRESIDENT = 2, '主席'
+  COMMITTEE = 3, '执委'
+  MEMBER = 4, '部员'
+  VISITOR = 5, '访客'
 
-  admin = models.BooleanField(default=False)
-
-  class Privilege(models.IntegerChoices):
-    ADMIN = 1, '审计'
-    PRESIDENT = 2, '主席'
-    COMMITTEE = 3, '执委'
-    MEMBER = 4, '部员'
-    VISITOR = 5, '访客'
-  approval_level = models.IntegerField(choices=Privilege.choices, default=Privilege.VISITOR)
-  application_level = models.IntegerField(choices=Privilege.choices, default=Privilege.VISITOR)
-
-  class Department(models.IntegerChoices):
+# CSSA departments
+class Department(models.IntegerChoices):
     PRESIDENT = 0, '主席团'
     SECRETARY = 1, '秘书处'
     TREASURER = 2, '财务处'
@@ -64,9 +58,18 @@ class User(AbstractBaseUser):
     ENTERTAINMENT = 8, '外联部'
     SPORTS = 9, '体育部'
     GENERAL = 10, '未分配'
+
+class User(AbstractBaseUser):
+  username = models.CharField(max_length=150, unique=True, validators=[username_validator])
+
+  name = models.CharField(max_length=150)
+  email = models.EmailField()
+  admin = models.BooleanField(default=False)
+
+  approval_level = models.IntegerField(choices=Privilege.choices, default=Privilege.VISITOR)
+  application_level = models.IntegerField(choices=Privilege.choices, default=Privilege.VISITOR)
   department = models.IntegerField(choices=Department.choices, default=Department.GENERAL)
 
-  name = models.CharField(max_length=150, blank=True)
   avatar = models.ImageField(upload_to=user_directory_path, blank=True)
   bio = models.TextField(blank=True)
   date_joined = models.DateTimeField(default=timezone.now)

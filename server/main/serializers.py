@@ -7,7 +7,7 @@ class DestinationSerializer(serializers.ModelSerializer):
     model = Destination
     fields = [
       'pk', 'user', 'name', 'sort_code',
-      'account_number', 'business', 'active',
+      'account_number', 'business', 'personal', 'last_active',
     ]
     read_only_fields = ['pk']
 
@@ -21,21 +21,12 @@ class ApplicationSerializer(serializers.ModelSerializer):
     ]
     read_only_fields = ['pk']
 
-class MessageSerializer(serializers.ModelSerializer):
-  class Meta:
-    model = Message
-    fields = [
-      'pk', 'user', 'application', 'timestamp',
-      'contents', 'file',
-    ]
-    read_only_fields = ['pk', 'timestamp']
-
 class EventSerializer(serializers.ModelSerializer):
   class Meta:
     model = Event
     fields = [
       'pk', 'user', 'application', 'timestamp',
-      'action',
+      'action', 'contents', 'file',
     ]
     read_only_fields = ['pk', 'timestamp']
     
