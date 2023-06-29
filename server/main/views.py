@@ -36,10 +36,15 @@ class IsAdmin(permissions.BasePermission):
 #     return (isinstance(request.user, User) and request.user.admin) or request.method == 'POST'
 
 
-class DestinationsView(generics.ListCreateAPIView):
-  queryset = Destination.objects
-  serializer_class = DestinationSerializer
-  permission_classes = [IsAdmin]
+class DestinationsView(views.APIView):
+  permission_classes = [permissions.AllowAny]
+
+  # Retrieve all destinations.
+  def get(self, request: Request) -> Response:
+    if not isinstance(request.user, User):
+      return Response([], status.HTTP_200_OK)
+    queryset = Destination.objects.all()
+    return Response(DestinationSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
 
 class UserDestinationsView(views.APIView):
@@ -63,8 +68,8 @@ class UserDestinationsView(views.APIView):
       'name': request.data.get('name'),
       'sort_code': request.data.get('sort_code'),
       'account_number': request.data.get('account_number'),
-      'personal': request.data.get('personal'),
       'business': request.data.get('business'),
+      'star': request.data.get('star'),
     })
     serializer.is_valid(raise_exception=True)
     serializer.save()
@@ -102,7 +107,7 @@ class ApplicationsView(views.APIView):
   # Retrieve all applications that the current user can access.
   def get(self, request: Request, pk: int) -> Response:
     user = request.user
-    pks = [app.pk for app in Application.objects if has_access_to_application(user, app)]
+    pks = [app.pk for app in Application.objects.all() if has_access_to_application(user, app)]
     queryset = Application.objects.filter(pk__in=pks).order_by('-timestamp')
     return Response(ApplicationSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
@@ -145,7 +150,7 @@ class NewApplicationView(views.APIView):
       'currency': request.data.get('currency'),
       'amount': request.data.get('amount'),
       'reason': request.data.get('reason'),
-      'level': user.application_level,
+      'level': user.application_level + 1,
     })
     serializer.is_valid(raise_exception=True)
     serializer.save()
@@ -165,7 +170,7 @@ class ApplicationView(views.APIView):
 
 
 class EventsView(generics.ListCreateAPIView):
-  queryset = Event.objects
+  queryset = Event.objects.all()
   serializer_class = EventSerializer
   permission_classes = [IsAdmin]
 

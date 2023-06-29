@@ -8,7 +8,7 @@ class DestinationSerializer(serializers.ModelSerializer):
     model = Destination
     fields = [
       'pk', 'user', 'name', 'sort_code',
-      'account_number', 'personal', 'business', 'last_usage',
+      'account_number', 'business', 'personal', 'last_usage',
     ]
     read_only_fields = ['pk']
 

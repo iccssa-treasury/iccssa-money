@@ -38,10 +38,9 @@ class Destination(models.Model):
     name = models.CharField(max_length=100)
     sort_code = models.CharField(max_length=6, validators=[MinLengthValidator(6)])
     account_number = models.CharField(max_length=8, validators=[MinLengthValidator(8)])
-
-    personal = models.BooleanField(default=False)
     business = models.BooleanField(default=False)
-    
+
+    star = models.BooleanField(default=False)
     last_usage = models.DateTimeField(auto_now=True)
 
     def __str__(self):

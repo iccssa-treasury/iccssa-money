@@ -82,6 +82,14 @@ DATABASES = {
     }
 }
 
+REST_FRAMEWORK = {
+  # 'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning',
+  # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+  # 'PAGE_SIZE': 10,
+  'DEFAULT_PERMISSION_CLASSES': ['rest_framework.permissions.AllowAny'],
+  'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer'],
+  'DEFAULT_PARSER_CLASSES': ['rest_framework.parsers.JSONParser'],
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -102,25 +110,61 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 AUTH_USER_MODEL = "accounts.User"
+AUTHENTICATION_BACKENDS = ['accounts.models.AuthBackend']
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
-LANGUAGE_CODE = "en-us"
-
-TIME_ZONE = "UTC"
-
+LANGUAGE_CODE = "en"
+TIME_ZONE = 'Europe/London'
 USE_I18N = True
-
 USE_TZ = True
+
+# HTML templates
+TEMPLATES = [
+  {
+    'BACKEND': 'django.template.backends.django.DjangoTemplates',
+    'OPTIONS': {
+      'context_processors': [
+        'django.template.context_processors.debug',
+        'django.template.context_processors.request',
+        'django.contrib.messages.context_processors.messages',
+        'django.contrib.auth.context_processors.auth',
+      ],
+    },
+    'APP_DIRS': True,
+    'DIRS': [
+      BASE_DIR / 'templates',  # Global template directories
+      BASE_DIR.parent / 'client' / 'build',
+    ],
+  },
+]
 
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATICFILES_DIRS = [
+  BASE_DIR / 'static',  # Global static file directories
+  BASE_DIR.parent / 'client' / 'build' / 'static',
+]
+
+if DEBUG:
+  STATIC_URL = '/static/'  # Static file web URL
+  MEDIA_URL = '/media/'  # User-uploaded file web URL
+  STATIC_ROOT = BASE_DIR / 'static_root'
+  MEDIA_ROOT = BASE_DIR / 'media_root'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+if DEBUG:
+  CORS_ALLOWED_ORIGINS = ['http://localhost:5173']
+  CORS_ALLOW_CREDENTIALS = True
+  CSRF_TRUSTED_ORIGINS = ['http://localhost:5173']
+  CSRF_COOKIE_SAMESITE = 'None'
+  CSRF_COOKIE_SECURE = True  # Ignored locally: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie
+  SESSION_COOKIE_SAMESITE = 'None'
+  SESSION_COOKIE_SECURE = True  # Ignored locally: https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Set-Cookie

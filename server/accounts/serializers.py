@@ -8,16 +8,18 @@ class UserBasicSerializer(serializers.ModelSerializer):
   class Meta:
     model = User
     fields = [
-      'pk', 'username',
-      'avatar', 'first_name', 'last_name', 'bio',
+      'pk', 'username', 'name',
+      'email', 'avatar', 'bio',
+      'application_level', 'department',
       'date_joined', 'last_login',
-      'admin',
+      # 'admin',
     ]
     read_only_fields = [
-      'pk', 'username',
-      'avatar', 'first_name', 'last_name', 'bio',
+      'pk', 'username', 'name',
+      'email', 'avatar', 'bio',
+      'application_level', 'department',
       'date_joined', 'last_login',
-      'admin',
+      # 'admin',
     ]
 
 
@@ -26,13 +28,15 @@ class UserSelfSerializer(serializers.ModelSerializer):
   class Meta:
     model = User
     fields = [
-      'pk', 'username', 'password', 'email',
-      'avatar', 'first_name', 'last_name', 'bio',
+      'pk', 'username', 'password', 'name', 
+      'email', 'avatar', 'bio',
+      'approval_level', 'application_level', 'department',
       'date_joined', 'last_login',
       'admin',
     ]
     read_only_fields = [
-      'pk',
+      'pk', 
+      'approval_level', 'application_level', 'department',
       'date_joined', 'last_login',
       'admin',
     ]
@@ -46,8 +50,9 @@ class UserAdminSerializer(serializers.ModelSerializer):
   class Meta:
     model = User
     fields = [
-      'pk', 'username', 'password', 'email',
-      'avatar', 'first_name', 'last_name', 'bio',
+      'pk', 'username', 'password', 'name', 
+      'email', 'avatar', 'bio',
+      'approval_level', 'application_level', 'department',
       'date_joined', 'last_login',
       'admin',
     ]
