@@ -1,6 +1,8 @@
 from datetime import datetime
 import logging
 from django.shortcuts import get_object_or_404
+from django.db import transaction
+from django.utils.decorators import method_decorator
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import views, generics, permissions, status
@@ -39,11 +41,11 @@ class IsAdmin(permissions.BasePermission):
 class DestinationsView(views.APIView):
   permission_classes = [permissions.AllowAny]
 
-  # Retrieve all destinations.
+  # Retrieve all public destinations.
   def get(self, request: Request) -> Response:
     if not isinstance(request.user, User):
       return Response([], status.HTTP_200_OK)
-    queryset = Destination.objects.all()
+    queryset = Destination.objects.filter(public=True)
     return Response(DestinationSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
 
@@ -55,7 +57,7 @@ class UserDestinationsView(views.APIView):
     user = request.user
     if not isinstance(user, User):
       return Response([], status.HTTP_200_OK)
-    queryset = Destination.objects.filter(user=user).order_by('-last_usage')
+    queryset = Destination.objects.filter(user=user)
     return Response(DestinationSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
   # Submit a new destination.
@@ -69,6 +71,7 @@ class UserDestinationsView(views.APIView):
       'sort_code': request.data.get('sort_code'),
       'account_number': request.data.get('account_number'),
       'business': request.data.get('business'),
+      'public': request.data.get('public'),
       'star': request.data.get('star'),
     })
     serializer.is_valid(raise_exception=True)
@@ -105,10 +108,10 @@ class ApplicationsView(views.APIView):
   permission_classes = [permissions.AllowAny]
 
   # Retrieve all applications that the current user can access.
-  def get(self, request: Request, pk: int) -> Response:
+  def get(self, request: Request) -> Response:
     user = request.user
     pks = [app.pk for app in Application.objects.all() if has_access_to_application(user, app)]
-    queryset = Application.objects.filter(pk__in=pks).order_by('-timestamp')
+    queryset = Application.objects.filter(pk__in=pks).order_by('-level')
     return Response(ApplicationSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
 
@@ -120,7 +123,7 @@ class UserApplicationsView(views.APIView):
     user = request.user
     if not isinstance(user, User):
       return Response([], status.HTTP_200_OK)
-    queryset = Application.objects.filter(user=user).order_by('-timestamp')
+    queryset = Application.objects.filter(user=user).order_by('-level')
     return Response(ApplicationSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
 
@@ -145,8 +148,11 @@ class NewApplicationView(views.APIView):
     serializer = ApplicationSerializer(data={
       'user': user.pk,
       'department': request.data.get('department'),
-      'destination': request.data.get('destination'),
       'category': request.data.get('category'),
+      'name': request.data.get('name'),
+      'sort_code': request.data.get('sort_code'),
+      'account_number': request.data.get('account_number'),
+      'business': request.data.get('business'),
       'currency': request.data.get('currency'),
       'amount': request.data.get('amount'),
       'reason': request.data.get('reason'),
@@ -201,7 +207,7 @@ def result_application_level(user: User, action: int) -> int:
   elif action == Action.REJECT:
     return Level.DECLINED
   elif action == Action.CREATE:
-    return user.application_level + 1
+    return user.application_level
   elif action == Action.CANCEL:
     return Level.DECLINED
   elif action == Action.COMPLETE:
@@ -220,14 +226,15 @@ class ApplicationEventsView(generics.ListCreateAPIView):
     queryset = Event.objects.filter(user=user, application=application).order_by('-timestamp')
     return Response(EventSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
-  # Submit a new event for an applciation.
-  def post(self, request: Request) -> Response:
+  # Submit a new event for an application.
+  @method_decorator(transaction.atomic)
+  def post(self, request: Request, pk: int) -> Response:
     user = request.user
-    application = get_object_or_404(Application, pk=request.data.get('application'))
+    application = get_object_or_404(Application, pk=pk)
     action = request.data.get('action')
     if not can_post_event(user, application, action):
       self.permission_denied(request)
-    serializer = ApplicationSerializer(data={
+    serializer = EventSerializer(data={
       'user': user.pk,
       'application': application.pk,
       'action': action,

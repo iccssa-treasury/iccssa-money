@@ -8,7 +8,7 @@ export default {
       large: false,
       sidebarActive: false,
       sidebarAnimating: false,
-      timeout: null as number | null,
+      timeout: null as NodeJS.Timeout | null,
     };
   },
   methods: {
@@ -54,7 +54,7 @@ export default {
     </div>
     <div class="pusher" :class="{ dimmed: sidebarActive }" @click="onClickPusher">
       <div class="flex-container">
-        <div class="ui borderless navigation menu" :class="{ inverted: landingPage, blue: landingPage }">
+        <div class="ui borderless navigation menu" :class="{ inverted: landingPage, orange: landingPage }">
           <div v-if="large" class="ui container">
             <slot name="navigation"></slot>
           </div>

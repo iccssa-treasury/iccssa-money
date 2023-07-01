@@ -17,9 +17,9 @@ from .serializers import *
 class UsersView(views.APIView):
   permission_classes = [permissions.AllowAny]  # Disable DRF permission checking, use our own logic.
 
-  # List all users (staff only).
+  # List all users.
   def get(self, request: Request) -> Response:
-    if not (isinstance(request.user, User) and request.user.admin):
+    if not isinstance(request.user, User):
       self.permission_denied(request)
     queryset = User.objects.order_by('pk')
     return Response(user_serializer(queryset, request=request, refl=False, many=True).data, status.HTTP_200_OK)

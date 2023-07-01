@@ -8,7 +8,7 @@ class DestinationSerializer(serializers.ModelSerializer):
     model = Destination
     fields = [
       'pk', 'user', 'name', 'sort_code',
-      'account_number', 'business', 'personal', 'last_usage',
+      'account_number', 'business', 'public', 'star',
     ]
     read_only_fields = ['pk']
 
@@ -16,8 +16,9 @@ class ApplicationSerializer(serializers.ModelSerializer):
   class Meta:
     model = Application
     fields = [
-      'pk', 'user', 'department', 'destination',
-      'category', 'currency', 'amount', 'reason',
+      'pk', 'user', 'department', 'category',
+      'name', 'sort_code', 'account_number', 'business',
+      'currency', 'amount', 'reason',
       'level',
     ]
     read_only_fields = ['pk']

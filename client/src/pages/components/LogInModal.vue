@@ -85,7 +85,7 @@ export default {
         <sui-message-content>
           <sui-list bulleted>
             <sui-list-item v-for="error of errors.all" :key="error">
-              <markdown-content :markdown="error" />
+              {{ error }}
             </sui-list-item>
           </sui-list>
         </sui-message-content>

@@ -2,6 +2,7 @@
 import { api } from '@/api';
 import { FormErrors } from '@/errors';
 import { messageErrors, user } from '@/state';
+import { Department, Privilege } from '@/enums';
 import axios from 'axios';
 
 // import MarkdownContent from './MarkdownContent.vue';
@@ -11,7 +12,7 @@ class FormFields {}
 export default {
   // components: { MarkdownContent },
   setup() {
-    return { user };
+    return { user, Department, Privilege };
   },
   // See: https://vuejs.org/guide/components/v-model.html
   props: ['modelValue'],
@@ -53,13 +54,16 @@ export default {
 
 <template>
   <sui-modal v-if="user" size="tiny" v-model="modalActive">
-    <sui-modal-header>User {{ user.username }}#{{ user.pk }}</sui-modal-header>
+    <sui-modal-header>{{ user.name }} @{{ user.username }}</sui-modal-header>
 
     <sui-modal-content scrolling>
       <sui-form></sui-form>
-
-      <a v-if="user.admin" href="/admin/" target="_blank" class="ui button">Site Administration</a>
-      <a v-if="user.admin" href="/api/main/feedbacks/" target="_blank" class="ui button">Feedbacks</a>
+      <b>{{ `${Department[user.department]} - ${Privilege[user.approval_level]}/${Privilege[user.application_level]}` }}</b>
+      <br><br>
+      <a v-if="user.admin" href="/admin/" target="_blank" class="ui button">
+        <sui-icon name="key" />
+        Administration
+      </a>
     </sui-modal-content>
 
     <sui-modal-actions>
@@ -68,7 +72,7 @@ export default {
         <sui-message-content>
           <sui-list bulleted>
             <sui-list-item v-for="error of errors.all" :key="error">
-              <markdown-content :markdown="error" />
+              {{ error }}
             </sui-list-item>
           </sui-list>
         </sui-message-content>

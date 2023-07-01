@@ -33,6 +33,8 @@ ALLOWED_HOSTS = []
 INSTALLED_APPS = [
     'main.apps.MainConfig',
     'accounts.apps.AccountsConfig',
+    'corsheaders',
+    'rest_framework',
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -42,13 +44,16 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    "django.middleware.security.SecurityMiddleware",
-    "django.contrib.sessions.middleware.SessionMiddleware",
-    "django.middleware.common.CommonMiddleware",
-    "django.middleware.csrf.CsrfViewMiddleware",
-    "django.contrib.auth.middleware.AuthenticationMiddleware",
-    "django.contrib.messages.middleware.MessageMiddleware",
-    "django.middleware.clickjacking.XFrameOptionsMiddleware",
+  'django.middleware.security.SecurityMiddleware',  # Security
+  "whitenoise.middleware.WhiteNoiseMiddleware",  # Temporary static files server
+  'django.contrib.sessions.middleware.SessionMiddleware',  # User session system
+  'django.middleware.locale.LocaleMiddleware',  # Localization, datetime format
+  'corsheaders.middleware.CorsMiddleware',  # CORS headers
+  'django.middleware.common.CommonMiddleware',
+  'django.middleware.csrf.CsrfViewMiddleware',  # CSRF protection
+  'django.middleware.clickjacking.XFrameOptionsMiddleware',  # Clickjacking protection
+  'django.contrib.messages.middleware.MessageMiddleware',  # One-time messages (required by the administration site)
+  'django.contrib.auth.middleware.AuthenticationMiddleware',  # Authentication system
 ]
 
 ROOT_URLCONF = "config.urls"
@@ -90,24 +95,6 @@ REST_FRAMEWORK = {
   'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer'],
   'DEFAULT_PARSER_CLASSES': ['rest_framework.parsers.JSONParser'],
 }
-
-# Password validation
-# https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
-
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
-]
 
 AUTH_USER_MODEL = "accounts.User"
 AUTHENTICATION_BACKENDS = ['accounts.models.AuthBackend']

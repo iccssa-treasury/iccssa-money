@@ -39,17 +39,20 @@ export interface Destination {
   name: string;
   sort_code: string;
   account_number: string;
-  personal: boolean;
   business: boolean;
-  last_usage: string;
+  public: boolean;
+  star: boolean;
 }
 
 export interface Application {
   pk: number;
   user: number;
-  destination: number;
   department: number;
   category: number;
+  name: string;
+  sort_code: string;
+  account_number: string;
+  business: boolean;
   currency: number;
   amount: number;
   reason: string;

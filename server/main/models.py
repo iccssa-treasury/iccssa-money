@@ -12,7 +12,7 @@ class Category(models.IntegerChoices):
 class Level(models.IntegerChoices):
     DECLINED = -1, '已取消'
     COMPLETED = 0, '已完成'
-    ACCEPTED = 1, '已通过'
+    ACCEPTED = 1, '待付款'
     AWAIT_ADMIN = 2, '待财务审批'
     AWAIT_PRESIDENT = 3, '待主席审批'
     AWAIT_COMMITTEE = 4, '待部门审批'
@@ -40,18 +40,21 @@ class Destination(models.Model):
     account_number = models.CharField(max_length=8, validators=[MinLengthValidator(8)])
     business = models.BooleanField(default=False)
 
+    public = models.BooleanField(default=True)
     star = models.BooleanField(default=False)
-    last_usage = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f'{self.name} - {self.sort_code}'
+        return f'{self.name} - {self.sort_code} - {self.account_number}'
 
 class Application(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)
-    destination = models.ForeignKey(Destination, on_delete=models.PROTECT)
-
     department = models.IntegerField(choices=Department.choices, default=Department.GENERAL)
     category = models.IntegerField(choices=Category.choices, default=Category.REIMBURSEMENT)
+
+    name = models.CharField(max_length=100)
+    sort_code = models.CharField(max_length=6, validators=[MinLengthValidator(6)])
+    account_number = models.CharField(max_length=8, validators=[MinLengthValidator(8)])
+    business = models.BooleanField(default=False)
 
     currency = models.IntegerField(choices=Currency.choices, default=Currency.GBP)
     amount = models.DecimalField(max_digits=10, decimal_places=2)

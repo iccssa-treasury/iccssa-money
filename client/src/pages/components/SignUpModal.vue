@@ -1,18 +1,9 @@
 <script lang="ts">
 import { api } from '@/api';
 import { FormErrors } from '@/errors';
+import { UserFields } from '@/forms';
 import { messageErrors } from '@/state';
 import axios from 'axios';
-
-// import MarkdownContent from './MarkdownContent.vue';
-
-class FormFields {
-  username: string = '';
-  password: string = '';
-  email: string = '';
-  passwordRepeat: string = '';
-  agree: boolean = false;
-}
 
 export default {
   // components: { MarkdownContent },
@@ -22,8 +13,9 @@ export default {
   data() {
     return {
       waiting: false,
-      fields: new FormFields(),
-      errors: new FormErrors<FormFields>({
+      fields: new UserFields(),
+      errors: new FormErrors<UserFields>({
+        name: [],
         username: [],
         password: [],
         email: [],
@@ -76,13 +68,17 @@ export default {
 
     <sui-modal-content scrolling>
       <sui-form>
+        <sui-form-field :error="errors.fields.name.length > 0">
+          <label>Name</label>
+          <input placeholder="Name" v-model="fields.name" @input="errors.fields.name.length = 0" />
+        </sui-form-field>
+        <sui-form-field :error="errors.fields.email.length > 0">
+          <label>Email</label>
+          <input placeholder="Email" v-model="fields.email" @input="errors.fields.email.length = 0" />
+        </sui-form-field>
         <sui-form-field :error="errors.fields.username.length > 0">
           <label>Username</label>
           <input placeholder="Username" v-model="fields.username" @input="errors.fields.username.length = 0" />
-        </sui-form-field>
-        <sui-form-field :error="errors.fields.email.length > 0">
-          <label>Email (optional)</label>
-          <input placeholder="Email (optional)" v-model="fields.email" @input="errors.fields.email.length = 0" />
         </sui-form-field>
         <sui-form-field :error="errors.fields.password.length > 0">
           <label>Password</label>
@@ -118,7 +114,7 @@ export default {
         <sui-message-content>
           <sui-list bulleted>
             <sui-list-item v-for="error of errors.all" :key="error">
-              <markdown-content :markdown="error" />
+              {{ error }}
             </sui-list-item>
           </sui-list>
         </sui-message-content>
