@@ -12,17 +12,17 @@ export enum Privilege {
 }
 
 export enum Department {
-  主席团 = 0,
-  秘书处 = 1,
-  财务处 = 2,
-  事业部 = 3,
-  媒体部 = 4,
-  赞助部 = 5,
-  文艺部 = 6,
-  文化部 = 7,
-  外联部 = 8,
-  体育部 = 9,
-  未分配 = 10,
+  未分配 = 0,
+  主席团 = 1,
+  秘书处 = 2,
+  财务处 = 3,
+  事业部 = 4,
+  媒体部 = 5,
+  赞助部 = 6,
+  文艺部 = 7,
+  文化部 = 8,
+  外联部 = 9,
+  体育部 = 10,
 }
 
 export enum Category {
@@ -59,7 +59,7 @@ export function level_icon(level: Level) {
 }
 
 export enum Action {
-  备注 = 0,
+  评论 = 0,
   批准 = 1,
   驳回 = 2,
   创建 = 3,

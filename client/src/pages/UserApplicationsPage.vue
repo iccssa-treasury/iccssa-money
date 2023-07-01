@@ -16,6 +16,7 @@ export default {
     return {
       loading: true,
       applications: new Array<Application>(),
+      show_inactive: false,
     };
   },
   async created() {
@@ -26,6 +27,13 @@ export default {
       messageErrors(e);
     }
   },
+  computed: {
+    display() {
+      return this.show_inactive ? 
+        this.applications : 
+        this.applications.filter((application) => application.level > 0);
+    },
+  }
 };
 </script>
 
@@ -33,10 +41,7 @@ export default {
   <div class="ui text container" style="padding: 1em 0; min-height: 80vh">
     <loading-text fill-height :loading="loading">
       <h1 class="ui header">申请记录</h1>
-      <router-link custom to="/applications/new/" v-slot="{ navigate }">
-        <button class="ui button primary" @click="navigate">新建申请</button>
-      </router-link>
-      <table class="ui compact fixed selectable striped single line celled table">
+      <table class="ui compact fixed selectable striped single line celled stuck table">
         <thead>
           <tr>
             <th class="two wide">类目</th>
@@ -47,12 +52,8 @@ export default {
           </tr>
         </thead>
         <tbody>
-          <router-link custom
-            v-for = "application in applications"
-            :key="application.pk"
-            :to="`/api/main/application/${application.pk}/`"
-            v-slot="{ navigate }"
-          >
+          <router-link custom v-for="application in display" :key="application.pk"
+            :to="`/application/${application.pk}/`" v-slot="{ navigate }">
             <tr @click="navigate">
               <td>{{ Category[application.category] }}</td>
               <td>{{ application.reason }}</td>
@@ -65,6 +66,16 @@ export default {
             </tr>
           </router-link>
         </tbody>
+        <tfoot class="full width">
+          <tr>
+            <th colspan="5">
+              <sui-checkbox toggle v-model="show_inactive" label="显示全部" />
+              <router-link custom to="/applications/new/" v-slot="{ navigate }">
+                <button class="ui right floated small primary button" @click="navigate">新建申请</button>
+              </router-link>
+            </th>
+          </tr>
+        </tfoot>
       </table>
     </loading-text>
   </div>

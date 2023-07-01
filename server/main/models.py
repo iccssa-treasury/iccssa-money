@@ -13,14 +13,14 @@ class Level(models.IntegerChoices):
     DECLINED = -1, '已取消'
     COMPLETED = 0, '已完成'
     ACCEPTED = 1, '待付款'
-    AWAIT_ADMIN = 2, '待财务审批'
+    AWAIT_AUDIT = 2, '待财务审批'
     AWAIT_PRESIDENT = 3, '待主席审批'
     AWAIT_COMMITTEE = 4, '待部门审批'
     AWAIT_MEMBER = 5, '待成员审批'
 
 # Application user action
 class Action(models.IntegerChoices):
-    SUPPORT = 0, '备注'
+    SUPPORT = 0, '评论'
     APPROVE = 1, '批准'
     REJECT = 2, '驳回'
     CREATE = 3, '创建'
@@ -33,7 +33,7 @@ class Currency(models.IntegerChoices):
     CNY = 1, '人民币'
 
 class Destination(models.Model):
-    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     name = models.CharField(max_length=100)
     sort_code = models.CharField(max_length=6, validators=[MinLengthValidator(6)])
@@ -48,7 +48,7 @@ class Destination(models.Model):
 
 class Application(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)
-    department = models.IntegerField(choices=Department.choices, default=Department.GENERAL)
+    department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
     category = models.IntegerField(choices=Category.choices, default=Category.REIMBURSEMENT)
 
     name = models.CharField(max_length=100)
@@ -69,8 +69,8 @@ def user_directory_path(self: models.Model, filename: str) -> str:
   return 'accounts/user_{0}/{1}'.format(self.pk, filename)
 
 class Event(models.Model):
-    user = models.ForeignKey(User, on_delete=models.PROTECT)
-    application = models.ForeignKey(Application, on_delete=models.PROTECT)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    application = models.ForeignKey(Application, on_delete=models.CASCADE)
 
     timestamp = models.DateTimeField(auto_now_add=True)
     action = models.IntegerField(choices=Action.choices, default=Action.SUPPORT)

@@ -17,7 +17,7 @@ export default {
     return {
       loading: true,
       applications: new Array<Application>(),
-      display: new Array<Application>(),
+      show_irrelevant: false,
       users: new Map<number, User>(),
     };
   },
@@ -27,7 +27,6 @@ export default {
       if (data) user.value = data as User;
       // console.log(data);
       this.applications = (await api.get('main/applications/')).data as Application[];
-      this.display = this.applications.filter((application) => application.level === 1 + (user.value?.approval_level ?? 0));
       for (const user of (await api.get('accounts/users/')).data as User[]) {
         this.users.set(user.pk, user);
       }
@@ -36,6 +35,16 @@ export default {
       messageErrors(e);
     }
   },
+  computed: {
+    display() {
+      if (user.value === undefined) return new Array<Application>();
+      const level = user.value.approval_level;
+      return this.show_irrelevant ?
+        this.applications :
+        this.applications.filter((application) => application.level === 1 + level ||
+          (application.level === 1 && level === 1)); // For Admins
+    },
+  }
 };
 </script>
 
@@ -43,7 +52,7 @@ export default {
   <div class="ui text container" style="padding: 1em 0; min-height: 80vh">
     <loading-text fill-height :loading="loading">
       <h1 class="ui header">待处理记录</h1>
-      <table class="ui compact fixed selectable striped single line celled table">
+      <table class="ui compact fixed selectable striped single line celled stuck table">
         <thead>
           <tr>
             <th class="two wide">类目</th>
@@ -55,13 +64,13 @@ export default {
           </tr>
         </thead>
         <tbody>
-          <router-link custom v-for="application in display" :key="application.pk"
-            :to="`/api/main/application/${application.pk}/`" v-slot="{ navigate }">
+          <router-link custom v-for="application in display" :key="application.pk" :to="`/application/${application.pk}/`"
+            v-slot="{ navigate }">
             <tr @click="navigate">
               <td>{{ Category[application.category] }}</td>
               <td>{{ Department[application.department] }}</td>
               <td>
-                <!-- <img class="ui avatar image" :src="users.get(application.user)?.avatar" /> -->
+                <!-- <img class="ui bordered avatar image" :src="users.get(application.user)?.avatar" /> -->
                 {{ users.get(application.user)?.name }}
               </td>
               <td>{{ application.reason }}</td>
@@ -73,6 +82,13 @@ export default {
             </tr>
           </router-link>
         </tbody>
+        <tfoot class="full width">
+          <tr>
+            <th colspan="6">
+              <sui-checkbox toggle v-model="show_irrelevant" label="显示全部" />
+            </th>
+          </tr>
+        </tfoot>
       </table>
     </loading-text>
   </div>

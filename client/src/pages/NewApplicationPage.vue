@@ -18,7 +18,6 @@ export default {
       success: false,
       waiting: false,
       fields: new ApplicationFields(),
-      contents: '', // SUPPORT Event
       destinations: new Array(),
       select_dest: null as { value: Destination, text: String } | null,
       save_dest: false,
@@ -32,6 +31,7 @@ export default {
         currency: [],
         amount: [],
         reason: [],
+        contents: [],
       }),
     };
   },
@@ -52,25 +52,24 @@ export default {
   },
   methods: {
     async submit() {
+      if (user.value === undefined) return;
       try {
         this.errors.clear();
         this.waiting = true;
         this.success = false;
-        const application = (await api.post('main/applications/new/', this.fields)).data;
-        await this.event(application.pk, 3);
+        await api.post('main/applications/new/', this.fields);
         if (this.save_dest) await this.save();
+        // manual clear
+        this.fields = new ApplicationFields();
+        this.fields.department = user.value.department;
+        this.select_dest = null;
+        this.save_dest = false;
         this.success = true;
       } catch (e) {
         if (axios.isAxiosError(e)) this.errors.decode(e);
         else messageErrors(e);
       }
       this.waiting = false;
-    },
-    async event(application: number, action: number) {
-      const event_fields = new EventFields();
-      event_fields.action = action;
-      event_fields.contents = this.contents;
-      await api.post(`main/application/${application}/events/`, event_fields);
     },
     async save() {
       const dest_fields = new DestinationFields();
@@ -116,7 +115,7 @@ export default {
           </select>
         </div>
       </div>
-      <div class="field">
+      <div class="field" :class="{ error: errors.fields.amount.length > 0 || errors.fields.currency.length > 0 }">
         <label>申请金额</label>
         <div class="fields">
           <div class="seven wide field" :class="{ error: errors.fields.amount.length > 0 }">
@@ -150,7 +149,7 @@ export default {
             @input="errors.fields.account_number.length = 0" />
         </div>
         <div class="two wide field" :class="{ error: errors.fields.business.length > 0 }">
-          <label>对公账户</label>
+          <label>Business</label>
           <sui-checkbox toggle v-model="fields.business" />
         </div>
       </div>
@@ -160,7 +159,7 @@ export default {
       <h4 class="ui dividing header">辅助信息</h4>
       <div class="field">
         <label>备注</label>
-        <textarea placeholder="补充申请详细信息…" rows="10" style="resize: vertical" v-model="contents"></textarea>
+        <textarea placeholder="补充申请详细信息…" rows="10" style="resize: vertical" v-model="fields.contents"></textarea>
       </div>
       <button class="ui primary button" :class="{ disabled: waiting, loading: waiting }" @click.prevent="submit">
         提交申请

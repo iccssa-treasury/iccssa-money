@@ -78,7 +78,7 @@ export default {
         <span>通知</span>
       </router-link>
       <a v-if="user" @click="sessionModalIsActive = true" class="item">
-        <img class="ui avatar image" :src="avatar" :alt="`${user.username}'s avatar`" />
+        <img class="ui bordered avatar image" :src="avatar" :alt="`${user.username}'s avatar`" />
         <span>{{ user.username }}</span>
       </a>
     </template>

@@ -1,38 +1,28 @@
 <script lang="ts">
-import { api, type User, type Destination } from '@/api';
+import { api, type User, type Event, type Application } from '@/api';
 import { messageErrors, user } from '@/state';
-import { FormErrors } from '@/errors';
-import { ApplicationFields, EventFields, DestinationFields } from '@/forms';
-import { choices, Category, Department, Currency } from '@/enums';
-import axios from 'axios';
+import { EventFields } from '@/forms';
+import { Action, Level, Category, Department, Currency, currency_symbol, level_status, level_icon } from '@/enums';
+import defaultAvatar from '@/assets/default-avatar.png';
 
 export default {
   setup() {
     return {
       user,
-      choices, Category, Department, Currency
+      Action, Level, Category, Department, Currency, 
+      currency_symbol, level_status, level_icon
     };
+  },
+  props: {
+    pk: { type: String, required: true },
   },
   data() {
     return {
-      success: false,
       waiting: false,
-      fields: new ApplicationFields(),
-      contents: '', // SUPPORT Event
-      destinations: new Array(),
-      select_dest: null as { value: Destination, text: String } | null,
-      save_dest: false,
-      errors: new FormErrors<ApplicationFields>({
-        category: [],
-        department: [],
-        name: [],
-        sort_code: [],
-        account_number: [],
-        business: [],
-        currency: [],
-        amount: [],
-        reason: [],
-      }),
+      application: null as Application | null,
+      events: new Array<Event>(),
+      users: new Map<number, User>(),
+      contents: '',
     };
   },
   async created() {
@@ -40,152 +30,145 @@ export default {
       const data = (await api.get('accounts/me/')).data;
       if (data) user.value = data as User;
       // console.log(data);
-      const destinations = (await api.get('main/destinations/')).data as Destination[];
-      this.destinations = destinations.map((dest) => ({ 
-        value: dest, 
-        text: `${dest.star ? '★ ' : ''}${dest.name} - ${dest.sort_code} - ${dest.account_number}`, 
-      }));
-      this.fields.department = data.department;
+      this.application = (await api.get(`main/application/${this.pk}/`)).data as Application;
+      this.events = (await api.get(`main/application/${this.pk}/events/`)).data as Event[];
+      for (const user of (await api.get('accounts/users/')).data as User[]) {
+        this.users.set(user.pk, user);
+      }
     } catch (e) {
       messageErrors(e);
     }
   },
+  computed: {
+    can_approve() {
+      if (user.value === undefined || this.application === null) return false;
+      return user.value.approval_level === this.application.level - 1 &&
+        (user.value.approval_level <= 2 || user.value.department === this.application.department);
+    },
+    can_cancel() {
+      if (user.value === undefined || this.application === null) return false;
+      return user.value.pk === this.application.user && this.application.level > 0;
+    },
+    can_complete() {
+      if (user.value === undefined || this.application === null) return false;
+      return user.value.approval_level === 1 && this.application.level === 1;
+    }
+  },
   methods: {
-    async submit() {
+    async event(application: string, action: number) {
       try {
-        this.errors.clear();
         this.waiting = true;
-        this.success = false;
-        const application = (await api.post('main/applications/new/', this.fields)).data;
-        await this.event(application.pk, 3);
-        if (this.save_dest) await this.save();
-        this.success = true;
+        const event_fields = new EventFields();
+        event_fields.action = action;
+        event_fields.contents = this.contents;
+        await api.post(`main/application/${application}/events/`, event_fields);
+        // manual update
+        this.application = (await api.get(`main/application/${this.pk}/`)).data as Application;
+        this.events = (await api.get(`main/application/${this.pk}/events/`)).data as Event[];
+        this.contents = '';
       } catch (e) {
-        if (axios.isAxiosError(e)) this.errors.decode(e);
-        else messageErrors(e);
+        messageErrors(e);
       }
       this.waiting = false;
     },
-    async event(application: number, action: number) {
-      const event_fields = new EventFields();
-      event_fields.action = action;
-      event_fields.contents = this.contents;
-      await api.post(`main/application/${application}/events/`, event_fields);
-    },
-    async save() {
-      const dest_fields = new DestinationFields();
-      dest_fields.name = this.fields.name;
-      dest_fields.sort_code = this.fields.sort_code;
-      dest_fields.account_number = this.fields.account_number;
-      dest_fields.business = this.fields.business;
-      await api.post('main/me/destinations/', dest_fields);
-    },
-    fill() {
-      // console.log(this.select_dest);
-      if (!this.select_dest) return;
-      const dest = this.select_dest.value as Destination;
-      this.fields.name = dest.name;
-      this.fields.sort_code = dest.sort_code;
-      this.fields.account_number = dest.account_number;
-      this.fields.business = dest.business;
+    avatar(pk: number) {
+      return this.users.get(pk)?.avatar ?? defaultAvatar;
     },
   },
 };
 </script>
 
 <template>
-  <div class="ui text container" style="padding: 1em 0; min-height: 80vh">
-    <h1 class="ui header">创建{{ Category[fields.category] }}申请</h1>
-    <form class="ui form">
-      <h4 class="ui dividing header">基础信息</h4>
-      <div class="fields">
-        <div class="ten wide field" :class="{ error: errors.fields.reason.length > 0 }">
-          <label>申请事由</label>
-          <input placeholder="资金用途..." v-model="fields.reason" @input="errors.fields.reason.length = 0" />
-        </div>
-        <div class="three wide field" :class="{ error: errors.fields.category.length > 0 }">
-          <label>财务类目</label>
-          <select class="ui selection dropdown" v-model="fields.category">
-            <option v-for="choice in choices(Category)" :value="choice.value">{{ choice.text }}</option>
-          </select>
-        </div>
-        <div class="three wide field" :class="{ error: errors.fields.department.length > 0 }">
-          <label>所属部门</label>
-          <select class="ui selection dropdown" v-model="fields.department">
-            <option v-for="choice in choices(Department)" :value="choice.value">{{ choice.text }}</option>
-          </select>
-        </div>
-      </div>
-      <div class="field">
-        <label>申请金额</label>
-        <div class="fields">
-          <div class="seven wide field" :class="{ error: errors.fields.amount.length > 0 }">
-            <input placeholder="0.00" v-model="fields.amount" @input="errors.fields.amount.length = 0">
-          </div>
-          <div class="three wide field" :class="{ error: errors.fields.currency.length > 0 }">
-            <select class="ui selection dropdown" v-model="fields.currency">
-              <option v-for="choice in choices(Currency)" :value="choice.value">{{ choice.text }}</option>
-            </select>
-          </div>
-        </div>
-      </div>
-      <h4 class="ui dividing header">收款账户</h4>
-      <div class="field">
-        <sui-dropdown search selection v-model="select_dest" :options="destinations" placeholder="从现有账户中搜索…"
-          v-on:change="fill" />
-      </div>
-      <div class="fields">
-        <div class="six wide field" :class="{ error: errors.fields.name.length > 0 }">
-          <label>账户名称</label>
-          <input placeholder="账户名称" v-model="fields.name" @input="errors.fields.name.length = 0" />
-        </div>
-        <div class="four wide field" :class="{ error: errors.fields.sort_code.length > 0 }">
-          <label>Sort Code</label>
-          <input placeholder="Sort Code" maxlength="6" v-model="fields.sort_code"
-            @input="errors.fields.sort_code.length = 0" />
-        </div>
-        <div class="four wide field" :class="{ error: errors.fields.account_number.length > 0 }">
-          <label>Account Number</label>
-          <input placeholder="Account No." maxlength="8" v-model="fields.account_number"
-            @input="errors.fields.account_number.length = 0" />
-        </div>
-        <div class="two wide field" :class="{ error: errors.fields.business.length > 0 }">
-          <label>对公账户</label>
-          <sui-checkbox toggle v-model="fields.business" />
-        </div>
-      </div>
-      <div class="field">
-        <sui-checkbox toggle v-model="save_dest" label="保存到我的账户列表" />
-      </div>
-      <h4 class="ui dividing header">辅助信息</h4>
-      <div class="field">
-        <label>备注</label>
-        <textarea placeholder="补充申请详细信息…" rows="10" style="resize: vertical" v-model="contents"></textarea>
-      </div>
-      <button class="ui primary button" :class="{ disabled: waiting, loading: waiting }" @click.prevent="submit">
-        提交申请
-      </button>
-    </form>
-
-    <div v-if="success" class="ui success icon message">
-      <p>申请已提交，请到报销申请列表中查看。</p>
-    </div>
-
-    <div v-if="errors.all.length > 0" class="ui error icon message">
-      <i class="info icon" />
+  <div v-if="user !== undefined && application !== null" class="ui text container"
+    style="padding: 1em 0; min-height: 80vh">
+    <h1 class="ui header">
+      <img class="ui big bordered avatar image" :src="avatar(application.user)" />
       <div class="content">
-        <ul class="ui bulleted list">
-          <li v-for="error of errors.all" :key="error" class="item">
-            {{ error }}
-          </li>
-        </ul>
+        {{ `${users.get(application.user)?.name} 的${Category[application.category]}申请` }}
+      </div>
+    </h1>
+    <table class="ui definition table">
+      <thead></thead>
+      <tbody>
+        <tr>
+          <td class="three wide">所属部门</td>
+          <td>{{ Department[application.department] }}</td>
+        </tr>
+        <tr>
+          <td>申请金额</td>
+          <td>{{ `${currency_symbol(application.currency)}${application.amount}` }}</td>
+        </tr>
+        <tr>
+          <td>收款账户</td>
+          <td>
+            {{ `${application.name} - ${application.sort_code} - ${application.account_number}` }}
+          </td>
+        </tr>
+        <tr>
+          <td>申请事由</td>
+          <td>{{ application.reason }}</td>
+        </tr>
+        <tr>
+          <td>当前状态</td>
+          <td :class="level_status(application.level)">
+            <i class="icon" :class="level_icon(application.level)"></i>
+            {{ Level[application.level] }}
+          </td>
+        </tr>
+        <tr>
+          <td>添加评论</td>
+          <td>
+            <div class="ui form">
+              <div class="field">
+                <textarea placeholder="添加评论…" v-model="contents" rows="3"></textarea>
+              </div>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+      <tfoot>
+        <tr>
+          <td colspan="2">
+            <button v-if="can_approve" class="ui primary positive button" :class="{ disabled: waiting, loading: waiting }"
+              @click="event(pk, 1)">
+              <i class="check icon"></i>批准
+            </button>
+            <button v-if="can_approve" class="ui primary negative button" :class="{ disabled: waiting, loading: waiting }"
+              @click="event(pk, 2)">
+              <i class="times icon"></i>驳回
+            </button>
+            <button v-if="can_complete" class="ui primary positive button" :class="{ disabled: waiting, loading: waiting }"
+              @click="event(pk, 5)">
+              <i class="piggy bank icon"></i>付款
+            </button>
+            <button v-if="can_cancel" class="ui primary orange button" :class="{ disabled: waiting, loading: waiting }"
+              @click="event(pk, 4)">
+              <i class="times icon"></i>取消
+            </button>
+            <button class="ui right floated primary button" :class="{ disabled: waiting, loading: waiting }"
+              @click="event(pk, 0)">
+              <i class="comment icon"></i>评论
+            </button>
+          </td>
+        </tr>
+      </tfoot>
+    </table>
+    <div class="ui divider"></div>
+    <div class="ui divided selection list">
+      <div v-for="event in events" :key="event.pk" class="item">
+        <div class="ui header">
+          <img class="ui tiny bordered avatar image" :src="avatar(event.user)" />
+          <div class="content">
+            {{ `${users.get(event.user)?.name}${Action[event.action]}了${Category[application.category]}申请` }}
+            {{ event.contents ? `: "${event.contents}"` : '' }}
+            <div class="sub header">{{ new Date(event.timestamp).toLocaleString() }}</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
-<style scoped>
-.ui.dropdown:not(.search) {
+<style scoped>.ui.dropdown:not(.search) {
   padding: 0.5em 0.5em !important;
-}
-</style>
+}</style>

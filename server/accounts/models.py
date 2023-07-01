@@ -30,7 +30,7 @@ def username_validator(username: str) -> None:
   if username.strip() != username:
     raise ValidationError('Username must not start with or end with a whitespace.')
   if len(username) < 3:
-    raise ValidationError('Username must be at least 4 characters long.')
+    raise ValidationError('Username must be at least 3 characters long.')
 
 
 def user_directory_path(self: models.Model, filename: str) -> str:
@@ -39,7 +39,7 @@ def user_directory_path(self: models.Model, filename: str) -> str:
 
 # User privilege level for application and approval
 class Privilege(models.IntegerChoices):
-  ADMIN = 1, '审计'
+  AUDIT = 1, '审计'
   PRESIDENT = 2, '主席'
   COMMITTEE = 3, '执委'
   MEMBER = 4, '部员'
@@ -47,17 +47,18 @@ class Privilege(models.IntegerChoices):
 
 # CSSA departments
 class Department(models.IntegerChoices):
-    PRESIDENT = 0, '主席团'
-    SECRETARY = 1, '秘书处'
-    TREASURER = 2, '财务处'
-    CAREERS = 3, '事业部'
-    MEDIA = 4, '媒体部'
-    SPONSORSHIP = 5, '赞助部'
-    ARTS = 6, '文艺部'
-    CULTURE = 7, '文化部'
-    ENTERTAINMENT = 8, '外联部'
-    SPORTS = 9, '体育部'
-    GENERAL = 10, '未分配'
+    UNDEFINED = 0, '未分配'
+    PRESIDENT = 1, '主席团'
+    SECRETARY = 2, '秘书处'
+    TREASURER = 3, '财务处'
+    CAREERS = 4, '事业部'
+    MEDIA = 5, '媒体部'
+    SPONSORSHIP = 6, '赞助部'
+    ARTS = 7, '文艺部'
+    CULTURE = 8, '文化部'
+    ENTERTAINMENT = 9, '外联部'
+    SPORTS = 10, '体育部'
+    
 
 class User(AbstractBaseUser):
   username = models.CharField(max_length=150, unique=True, validators=[username_validator])
@@ -68,7 +69,7 @@ class User(AbstractBaseUser):
 
   approval_level = models.IntegerField(choices=Privilege.choices, default=Privilege.VISITOR)
   application_level = models.IntegerField(choices=Privilege.choices, default=Privilege.VISITOR)
-  department = models.IntegerField(choices=Department.choices, default=Department.GENERAL)
+  department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
 
   avatar = models.ImageField(upload_to=user_directory_path, blank=True)
   bio = models.TextField(blank=True)
