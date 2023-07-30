@@ -66,7 +66,7 @@ class Application(models.Model):
         return f'[{self.get_department_display()}] - {self.user} {self.get_category_display()} {self.amount} {self.get_currency_display()}'
 
 def user_directory_path(self: models.Model, filename: str) -> str:
-  return 'accounts/user_{0}/{1}'.format(self.pk, filename)
+  return 'accounts/user_{0}/{1}'.format(self.user.pk, filename)
 
 class Event(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)

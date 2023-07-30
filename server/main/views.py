@@ -6,6 +6,7 @@ from django.utils.decorators import method_decorator
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework import views, generics, permissions, status
+from rest_framework.parsers import MultiPartParser
 from .serializers import *
 from accounts.models import Privilege
 from .models import Level, Action
@@ -133,6 +134,7 @@ def can_post_application(user: User, department: str) -> bool:
 
 
 class NewApplicationView(views.APIView):
+  parser_classes = [MultiPartParser]
   permission_classes = [IsUser]
 
   # Submit a new application.
@@ -246,7 +248,7 @@ class ApplicationEventsView(generics.ListCreateAPIView):
       'application': application.pk,
       'action': action,
       'contents': request.data.get('contents'),
-      'file': request.data.get('file'),
+      'file': process_file(request.data.get('file'), request.data.get('file_name')),
     })
     serializer.is_valid(raise_exception=True)
     serializer.save()

@@ -32,6 +32,7 @@ export default {
         amount: [],
         reason: [],
         contents: [],
+        file: [],
       }),
     };
   },
@@ -57,7 +58,9 @@ export default {
         this.errors.clear();
         this.waiting = true;
         this.success = false;
-        await api.post('main/applications/new/', this.fields);
+        await api.post('main/applications/new/', this.fields, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
         if (this.save_dest) await this.save();
         // manual clear
         this.fields = new ApplicationFields();
@@ -78,6 +81,12 @@ export default {
       dest_fields.account_number = this.fields.account_number;
       dest_fields.business = this.fields.business;
       await api.post('main/me/destinations/', dest_fields);
+    },
+    onFileChange(event: Event) {
+      if (event.target === null) return;
+      const files = (event.target as HTMLInputElement).files
+      if (files === null || !files.length) return;
+      this.fields.file = files[0];
     },
     fill() {
       // console.log(this.select_dest);
@@ -131,7 +140,7 @@ export default {
       <h4 class="ui dividing header">收款账户</h4>
       <div class="field">
         <sui-dropdown search selection v-model="select_dest" :options="destinations" placeholder="从现有账户中搜索…"
-          v-on:change="fill" />
+          @click="fill" />
       </div>
       <div class="fields">
         <div class="six wide field" :class="{ error: errors.fields.name.length > 0 }">
@@ -160,6 +169,12 @@ export default {
       <div class="field">
         <label>备注</label>
         <textarea placeholder="补充申请详细信息…" rows="10" style="resize: vertical" v-model="fields.contents"></textarea>
+      </div>
+      <div class="field">
+        <label>附件</label>
+        <div class="ui file input">
+          <input type="file" @change="onFileChange" />
+        </div>
       </div>
       <button class="ui primary button" :class="{ disabled: waiting, loading: waiting }" @click.prevent="submit">
         提交申请

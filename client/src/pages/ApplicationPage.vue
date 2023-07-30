@@ -84,7 +84,7 @@ export default {
     <h1 class="ui header">
       <img class="ui big bordered avatar image" :src="avatar(application.user)" />
       <div class="content">
-        {{ `${users.get(application.user)?.name} 的${Category[application.category]}申请` }}
+        {{ `${users.get(application.user)?.name} 的${Category[application.category]}申请 #${application.pk}` }}
       </div>
     </h1>
     <table class="ui definition table">

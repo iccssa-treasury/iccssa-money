@@ -73,7 +73,7 @@ export default {
         <i class="user circle icon" />
         <span>Sign up</span>
       </a>
-      <router-link v-if="user" to="me/notifications/" class="right item">
+      <router-link v-if="user" to="/me/notifications/" class="right item">
         <i class="bell icon" />
         <span>通知</span>
       </router-link>

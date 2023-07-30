@@ -26,8 +26,9 @@ export class ApplicationFields {
   currency: number = 0;
   amount: number | null = null;
   reason: string = '';
-
+  // Event fields
   contents: string = '';
+  file: string | Blob = '';
 }
 
 export class EventFields {

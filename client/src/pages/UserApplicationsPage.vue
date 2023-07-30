@@ -16,6 +16,8 @@ export default {
     return {
       loading: true,
       applications: new Array<Application>(),
+      show_pending: true,
+      show_completed: false,
       show_inactive: false,
     };
   },
@@ -29,9 +31,11 @@ export default {
   },
   computed: {
     display() {
-      return this.show_inactive ? 
-        this.applications : 
-        this.applications.filter((application) => application.level > 0);
+      return this.applications.filter((application) => 
+        this.show_pending && application.level > 0 ||
+        this.show_completed && application.level === 0 ||
+        this.show_inactive && application.level < 0
+      );
     },
   }
 };
@@ -69,7 +73,9 @@ export default {
         <tfoot class="full width">
           <tr>
             <th colspan="5">
-              <sui-checkbox toggle v-model="show_inactive" label="显示全部" />
+              <sui-checkbox toggle v-model="show_pending" label="待审批" />
+              <sui-checkbox toggle v-model="show_completed" label="已完成" />
+              <sui-checkbox toggle v-model="show_inactive" label="已取消" />
               <router-link custom to="/applications/new/" v-slot="{ navigate }">
                 <button class="ui right floated small primary button" @click="navigate">新建申请</button>
               </router-link>
@@ -81,4 +87,8 @@ export default {
   </div>
 </template>
 
-<style scoped></style>
+<style scoped>
+  .checkbox {
+    padding-right: 1em;
+  }
+</style>

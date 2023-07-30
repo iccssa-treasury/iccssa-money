@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import os
 from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -20,13 +21,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = "django-insecure-(jdrdz(htee0qilj5&l3!muzf+0n0*idr*cr2a3%q+du7+=(_q"
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
-
-ALLOWED_HOSTS = []
-
+SECRET_KEY = os.environ["SECRET_KEY"]
+DEBUG = (os.environ.get('DEBUG', '') == '1')
+ALLOWED_HOSTS = ['*'] if DEBUG else os.environ.get('ALLOWED_HOSTS', '').split()
 
 # Application definition
 
@@ -76,14 +73,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
-
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "cssa",
+        "ENGINE": "django.db.backends.sqlite3",
+        "NAME": BASE_DIR / "db.sqlite3",
     }
 }
 
@@ -127,7 +123,6 @@ TEMPLATES = [
   },
 ]
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
@@ -136,11 +131,21 @@ STATICFILES_DIRS = [
   BASE_DIR.parent / 'client' / 'build' / 'static',
 ]
 
-if DEBUG:
-  STATIC_URL = '/static/'  # Static file web URL
-  MEDIA_URL = '/media/'  # User-uploaded file web URL
-  STATIC_ROOT = BASE_DIR / 'static_root'
-  MEDIA_ROOT = BASE_DIR / 'media_root'
+STATIC_URL = '/static/'  # Static file web URL
+MEDIA_URL = '/media/'  # User-uploaded file web URL
+STATIC_ROOT = BASE_DIR / 'static_root'
+MEDIA_ROOT = BASE_DIR / 'media_root'
+
+if not DEBUG:
+  STORAGES = {
+    "staticfiles": {
+      "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+    "default": {
+      "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+    },
+  }
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
