@@ -16,30 +16,23 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
-
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.environ["SECRET_KEY"]
-DEBUG = (os.environ.get('DEBUG', '') == '1')
-ALLOWED_HOSTS = ['*'] if DEBUG else os.environ.get('ALLOWED_HOSTS', '').split()
+SECRET_KEY = os.environ["CSSA_SECRET_KEY"]
+DEBUG = (os.environ.get('CSSA_DEBUG', '') == '1')
+ALLOWED_HOSTS = ['*'] if DEBUG else os.environ.get('CSSA_ALLOWED_HOSTS', '').split()
 
 # Application definition
-
 INSTALLED_APPS = [
-    'main.apps.MainConfig',
-    'accounts.apps.AccountsConfig',
-    'corsheaders',
-    'rest_framework',
-    "django.contrib.admin",
-    "django.contrib.auth",
-    "django.contrib.contenttypes",
-    "django.contrib.sessions",
-    "django.contrib.messages",
-    "django.contrib.staticfiles",
+  'django.contrib.staticfiles',  # Static files system
+  'django.contrib.contenttypes',  # Generic relations between models
+  'django.contrib.sessions',  # User session system
+  'django.contrib.messages',  # One-time messages (required by the administration site)
+  'django.contrib.auth',  # User authentication system
+  'django.contrib.admin',  # Administration site
+  'corsheaders',  # The Django CORS headers configurator
+  'rest_framework',  # The Django REST framework
+  'accounts.apps.AccountsConfig',
+  'main.apps.MainConfig',
 ]
-
 MIDDLEWARE = [
   'django.middleware.security.SecurityMiddleware',  # Security
   "whitenoise.middleware.WhiteNoiseMiddleware",  # Temporary static files server
@@ -52,25 +45,7 @@ MIDDLEWARE = [
   'django.contrib.messages.middleware.MessageMiddleware',  # One-time messages (required by the administration site)
   'django.contrib.auth.middleware.AuthenticationMiddleware',  # Authentication system
 ]
-
 ROOT_URLCONF = "config.urls"
-
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / 'templates'],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-            ],
-        },
-    },
-]
-
 WSGI_APPLICATION = "config.wsgi.application"
 
 # Database
@@ -83,6 +58,8 @@ DATABASES = {
     }
 }
 
+# REST framework
+# https://www.django-rest-framework.org/
 REST_FRAMEWORK = {
   # 'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.NamespaceVersioning',
   # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
@@ -92,15 +69,18 @@ REST_FRAMEWORK = {
   'DEFAULT_PARSER_CLASSES': ['rest_framework.parsers.JSONParser'],
 }
 
+# Custom authentication
+# https://docs.djangoproject.com/en/3.0/topics/auth/customizing/
 AUTH_USER_MODEL = "accounts.User"
 AUTHENTICATION_BACKENDS = ['accounts.models.AuthBackend']
 
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
-
-LANGUAGE_CODE = "en"
+# LOCALE_PATHS = [BASE_DIR / 'locale']
+LANGUAGE_CODE = 'en'
 TIME_ZONE = 'Europe/London'
 USE_I18N = True
+# USE_L10N = True
 USE_TZ = True
 
 # HTML templates
@@ -123,20 +103,33 @@ TEMPLATES = [
   },
 ]
 
-# Static files (CSS, JavaScript, Images)
+# Static files (CSS, JavaScript, etc.) and user uploaded media files (images, videos, etc.)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
-
+# https://docs.djangoproject.com/en/4.2/topics/files/
 STATICFILES_DIRS = [
   BASE_DIR / 'static',  # Global static file directories
   BASE_DIR.parent / 'client' / 'build' / 'static',
 ]
 
-STATIC_URL = '/static/'  # Static file web URL
-MEDIA_URL = '/media/'  # User-uploaded file web URL
-STATIC_ROOT = BASE_DIR / 'static_root'
-MEDIA_ROOT = BASE_DIR / 'media_root'
+# Using WhiteNoise for static files storage
+# https://whitenoise.readthedocs.io/en/latest/django.html
+# Using AWS S3 for media storage
+# https://django-storages.readthedocs.io/en/latest/backends/amazon-S3.html
+if DEBUG:
+  STATIC_URL = '/static/'  # Static file web URL
+  MEDIA_URL = '/media/'  # User-uploaded file web URL
+  STATIC_ROOT = BASE_DIR / 'static_root'
+  MEDIA_ROOT = BASE_DIR / 'media_root'
 
-if not DEBUG:
+else:
+  STATIC_URL = os.environ['CSSA_STATIC_URL']
+  MEDIA_URL = os.environ['CSSA_MEDIA_URL']
+  STATIC_ROOT = BASE_DIR / 'static_root'
+  AWS_S3_ACCESS_KEY_ID = os.environ['CSSA_AMAZON_S3_ACCESS_KEY_ID']
+  AWS_S3_SECRET_ACCESS_KEY = os.environ['CSSA_AMAZON_S3_SECRET_ACCESS_KEY']
+  AWS_S3_REGION_NAME = os.environ['CSSA_AMAZON_S3_REGION']
+  AWS_STORAGE_BUCKET_NAME = os.environ['CSSA_AMAZON_S3_BUCKET']
+  AWS_LOCATION = os.environ.get('CSSA_AMAZON_S3_LOCATION', default='')
   STORAGES = {
     "staticfiles": {
       "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
@@ -146,12 +139,45 @@ if not DEBUG:
     },
   }
 
+# HTTP SSL configuration
+# https://docs.djangoproject.com/en/4.2/ref/settings/#secure-ssl-redirect
+# if not DEBUG:
+#   SECURE_SSL_REDIRECT = True
+#   SESSION_COOKIE_SECURE = True
+#   CSRF_COOKIE_SECURE = True
+#   SECURE_HSTS_SECONDS = 3600
+
+# In the presence of a reverse proxy:
+# https://docs.djangoproject.com/en/4.2/ref/settings/#std:setting-SECURE_PROXY_SSL_HEADER
+if not DEBUG:
+  SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+# Logging
+# https://docs.djangoproject.com/en/4.2/topics/logging/
+LOGGING = {
+  'version': 1,
+  'disable_existing_loggers': False,
+  'loggers': {
+    'django': {
+      'level': 'INFO',
+      'handlers': ['file'],
+      'propagate': True,
+    },
+  },
+  'handlers': {
+    'file': {
+      'level': 'INFO',
+      'class': 'logging.FileHandler',
+      'filename': os.environ.get('CSSA_DJANGO_LOG_FILE', 'django.log'),
+    },
+  },
+}
+
+# Allow cross-origin requests from `http://localhost:5173` in debug mode
 if DEBUG:
   CORS_ALLOWED_ORIGINS = ['http://localhost:5173']
   CORS_ALLOW_CREDENTIALS = True

@@ -1,0 +1,13 @@
+# General
+.vscode/
+Thumbs.db
+.DS_Store
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+
+# Nginx
+nginx.conf
