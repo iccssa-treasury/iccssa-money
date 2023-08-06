@@ -17,7 +17,7 @@ export default {
       loading: true,
       applications: new Array<Application>(),
       show_pending: true,
-      show_completed: false,
+      show_completed: true,
       show_inactive: false,
     };
   },

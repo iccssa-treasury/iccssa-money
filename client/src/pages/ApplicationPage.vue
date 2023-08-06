@@ -5,7 +5,11 @@ import { EventFields } from '@/forms';
 import { Action, Level, Category, Department, Currency, currency_symbol, level_status, level_icon } from '@/enums';
 import defaultAvatar from '@/assets/default-avatar.png';
 
+import ApplicationEvent from './components/ApplicationEvent.vue';
+import FileUpload from './components/FileUpload.vue';
+
 export default {
+  components: { ApplicationEvent, FileUpload },
   setup() {
     return {
       user,
@@ -23,6 +27,7 @@ export default {
       events: new Array<Event>(),
       users: new Map<number, User>(),
       contents: '',
+      file: null as null | Blob,
     };
   },
   async created() {
@@ -61,11 +66,15 @@ export default {
         const event_fields = new EventFields();
         event_fields.action = action;
         event_fields.contents = this.contents;
-        await api.post(`main/application/${application}/events/`, event_fields);
+        event_fields.file = this.file;
+        await api.post(`main/application/${application}/events/`, event_fields, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
         // manual update
         this.application = (await api.get(`main/application/${this.pk}/`)).data as Application;
         this.events = (await api.get(`main/application/${this.pk}/events/`)).data as Event[];
         this.contents = '';
+        this.file = null;
       } catch (e) {
         messageErrors(e);
       }
@@ -101,6 +110,7 @@ export default {
         <tr>
           <td>收款账户</td>
           <td>
+            <span v-if="application.business">[B]</span>
             {{ `${application.name} - ${application.sort_code} - ${application.account_number}` }}
           </td>
         </tr>
@@ -125,6 +135,12 @@ export default {
             </div>
           </td>
         </tr>
+        <tr>
+          <td>添加附件</td>
+          <td>
+            <file-upload v-model="file" />
+          </td>
+        </tr>
       </tbody>
       <tfoot>
         <tr>
@@ -143,7 +159,7 @@ export default {
             </button>
             <button v-if="can_cancel" class="ui primary orange button" :class="{ disabled: waiting, loading: waiting }"
               @click="event(pk, 4)">
-              <i class="times icon"></i>取消
+              <i class="times icon"></i>删除
             </button>
             <button class="ui right floated primary button" :class="{ disabled: waiting, loading: waiting }"
               @click="event(pk, 0)">
@@ -156,14 +172,15 @@ export default {
     <div class="ui divider"></div>
     <div class="ui divided selection list">
       <div v-for="event in events" :key="event.pk" class="item">
-        <div class="ui header">
-          <img class="ui tiny bordered avatar image" :src="avatar(event.user)" />
-          <div class="content">
-            {{ `${users.get(event.user)?.name}${Action[event.action]}了${Category[application.category]}申请` }}
-            {{ event.contents ? `: "${event.contents}"` : '' }}
-            <div class="sub header">{{ new Date(event.timestamp).toLocaleString() }}</div>
-          </div>
-        </div>
+        <application-event
+          :time="new Date(event.timestamp).toLocaleString()"
+          :avatar="avatar(event.user)"
+          :name="users.get(event.user)?.name??''"
+          :action="Action[event.action]"
+          :category="Category[application.category]"
+          :contents="event.contents"
+          :file="event.file"
+        />
       </div>
     </div>
   </div>

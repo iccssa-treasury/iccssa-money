@@ -1,6 +1,9 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from django.core.validators import MinLengthValidator
 from accounts.models import User, Department
+from uuid import uuid4
 
 # Application category
 class Category(models.IntegerChoices):
@@ -66,7 +69,11 @@ class Application(models.Model):
         return f'[{self.get_department_display()}] - {self.user} {self.get_category_display()} {self.amount} {self.get_currency_display()}'
 
 def user_directory_path(self: models.Model, filename: str) -> str:
-  return 'accounts/user_{0}/{1}'.format(self.user.pk, filename)
+    return 'accounts/user_{0}/{1}'.format(self.user.pk, filename)
+
+def fileSizeValidator(file):
+    if file.size > 10 * 1024 * 1024:
+        raise ValidationError(f'File size exceeds 10MB limit.')
 
 class Event(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -75,7 +82,10 @@ class Event(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     action = models.IntegerField(choices=Action.choices, default=Action.SUPPORT)
     contents = models.TextField(null=True, blank=True)
-    file = models.FileField(upload_to=user_directory_path, null=True, blank=True)
+    file = models.FileField(upload_to=user_directory_path, null=True, blank=True, validators=[
+        FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']),
+        fileSizeValidator
+    ])
 
     def __str__(self):
         contents = f': "{self.contents[:20]}"' if self.contents else ''

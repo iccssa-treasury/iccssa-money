@@ -110,7 +110,7 @@ class ApplicationsView(views.APIView):
   def get(self, request: Request) -> Response:
     user = request.user
     pks = [app.pk for app in Application.objects.all() if has_access_to_application(user, app)]
-    queryset = Application.objects.filter(pk__in=pks).order_by('level')
+    queryset = Application.objects.filter(pk__in=pks).order_by('-level')
     return Response(ApplicationSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
 
@@ -120,7 +120,7 @@ class UserApplicationsView(views.APIView):
   # Retrieve all applications created by current user.
   def get(self, request: Request) -> Response:
     user = request.user
-    queryset = Application.objects.filter(user=user).order_by('level')
+    queryset = Application.objects.filter(user=user).order_by('-level')
     return Response(ApplicationSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
 
@@ -224,6 +224,7 @@ def result_application_level(user: User, action: int) -> int:
 
 
 class ApplicationEventsView(generics.ListCreateAPIView):
+  parser_classes = [MultiPartParser]
   permission_classes = [IsUser]
 
   # Retrieve all events for current user and given application.
@@ -240,7 +241,7 @@ class ApplicationEventsView(generics.ListCreateAPIView):
   def post(self, request: Request, pk: int) -> Response:
     user = request.user
     application = get_object_or_404(Application, pk=pk)
-    action = request.data.get('action')
+    action = int(request.data.get('action'))
     if not can_post_event(user, application, action):
       self.permission_denied(request)
     serializer = EventSerializer(data={
@@ -248,7 +249,7 @@ class ApplicationEventsView(generics.ListCreateAPIView):
       'application': application.pk,
       'action': action,
       'contents': request.data.get('contents'),
-      'file': process_file(request.data.get('file'), request.data.get('file_name')),
+      'file': request.data.get('file'),
     })
     serializer.is_valid(raise_exception=True)
     serializer.save()

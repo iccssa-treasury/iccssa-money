@@ -62,7 +62,7 @@ export default {
             <i class="bars icon" />
           </a>
           <router-link v-if="!large" class="header item" to="/">
-            <span>CATE</span>
+            <span>帝国财务</span>
           </router-link>
         </div>
         <div class="content">

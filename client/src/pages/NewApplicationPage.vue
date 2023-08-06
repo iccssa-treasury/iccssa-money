@@ -1,12 +1,15 @@
 <script lang="ts">
+import axios from 'axios';
 import { api, type User, type Destination } from '@/api';
 import { messageErrors, user } from '@/state';
 import { FormErrors } from '@/errors';
 import { ApplicationFields, EventFields, DestinationFields } from '@/forms';
 import { choices, Category, Department, Currency } from '@/enums';
-import axios from 'axios';
+
+import FileUpload from './components/FileUpload.vue';
 
 export default {
+  components: { FileUpload },
   setup() {
     return {
       user,
@@ -82,12 +85,6 @@ export default {
       dest_fields.business = this.fields.business;
       await api.post('main/me/destinations/', dest_fields);
     },
-    onFileChange(event: Event) {
-      if (event.target === null) return;
-      const files = (event.target as HTMLInputElement).files
-      if (files === null || !files.length) return;
-      this.fields.file = files[0];
-    },
     fill() {
       // console.log(this.select_dest);
       if (!this.select_dest) return;
@@ -138,14 +135,20 @@ export default {
         </div>
       </div>
       <h4 class="ui dividing header">收款账户</h4>
-      <div class="field">
-        <sui-dropdown search selection v-model="select_dest" :options="destinations" placeholder="从现有账户中搜索…"
-          @click="fill" />
+      <div class="fields">
+        <div class="fourteen wide field">
+          <sui-dropdown search selection v-model="select_dest" :options="destinations" placeholder="从现有账户中搜索…" />
+        </div>
+        <div class="one wide field">
+          <button class="ui icon button" :class="{ disabled: waiting, loading: waiting }" @click.prevent="fill">
+            <i class="sync alternate icon"></i>
+          </button>
+        </div>
       </div>
       <div class="fields">
         <div class="six wide field" :class="{ error: errors.fields.name.length > 0 }">
-          <label>账户名称</label>
-          <input placeholder="账户名称" v-model="fields.name" @input="errors.fields.name.length = 0" />
+          <label>Recipient Name</label>
+          <input placeholder="Recipient Name" v-model="fields.name" @input="errors.fields.name.length = 0" />
         </div>
         <div class="four wide field" :class="{ error: errors.fields.sort_code.length > 0 }">
           <label>Sort Code</label>
@@ -172,9 +175,7 @@ export default {
       </div>
       <div class="field">
         <label>附件</label>
-        <div class="ui file input">
-          <input type="file" @change="onFileChange" />
-        </div>
+        <file-upload v-model="fields.file" />
       </div>
       <button class="ui primary button" :class="{ disabled: waiting, loading: waiting }" @click.prevent="submit">
         提交申请

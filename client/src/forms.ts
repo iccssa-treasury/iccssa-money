@@ -28,10 +28,11 @@ export class ApplicationFields {
   reason: string = '';
   // Event fields
   contents: string = '';
-  file: string | Blob = '';
+  file: null | Blob = null;
 }
 
 export class EventFields {
   action: number = 0;
   contents: string = '';
+  file: null | Blob = null;
 }
