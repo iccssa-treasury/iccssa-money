@@ -1,9 +1,9 @@
 #!/bin/bash
 
-cd ~/cssa && \
-git stash && \
-git pull --rebase && \
-git stash pop && \
+# cd ~/cssa && \
+# git stash && \
+# git pull --rebase && \
+# git stash pop && \
 cd ~/cssa/client && \
 npm run build && \
 cd ~/cssa/server && \

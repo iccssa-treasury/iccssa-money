@@ -36,3 +36,20 @@ export class EventFields {
   contents: string = '';
   file: null | Blob = null;
 }
+
+export class IncomeFields {
+  department: number = 0;
+  currency: number = 0;
+  amount: number | null = null;
+  reason: string = '';
+  // Event fields
+  contents: string = '';
+  file: null | Blob = null;
+}
+
+export class ReceiptFields {
+  action: number = 0;
+  amount: number = 0;
+  contents: string = '';
+  file: null | Blob = null;
+}

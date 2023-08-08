@@ -22,6 +22,7 @@ export interface User {
   approval_level: number;
   application_level: number;
   department: number;
+  representative: boolean;
   avatar: string;
   bio: string;
   date_joined: string;
@@ -65,6 +66,28 @@ export interface Event {
   application: number;
   timestamp: string;
   action: number;
+  contents: string;
+  file: string;
+}
+
+export interface Income {
+  pk: number;
+  user: number;
+  department: number;
+  currency: number;
+  amount: number;
+  reason: string;
+  received: number;
+  level: number;
+}
+
+export interface Receipt {
+  pk: number;
+  user: number;
+  income: number;
+  timestamp: string;
+  action: number;
+  amount: number;
   contents: string;
   file: string;
 }

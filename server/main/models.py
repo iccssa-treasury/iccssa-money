@@ -91,3 +91,36 @@ class Event(models.Model):
         contents = f': "{self.contents[:20]}"' if self.contents else ''
         file = f' [{self.file}]' if self.file else ''
         return f'{self.user} [{self.get_action_display()}] {self.application}{file}{contents}'
+
+class Income(models.Model):
+    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
+
+    currency = models.IntegerField(choices=Currency.choices, default=Currency.GBP)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    reason = models.TextField()
+
+    received = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    level = models.IntegerField(choices=Level.choices, default=Level.ACCEPTED)
+
+    def __str__(self):
+        return f'[{self.get_department_display()}] - {self.reason} {self.amount} {self.get_currency_display()}'
+
+class Receipt(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    income = models.ForeignKey(Income, on_delete=models.CASCADE)
+
+    timestamp = models.DateTimeField(auto_now_add=True)
+    action = models.IntegerField(choices=Action.choices, default=Action.SUPPORT)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    contents = models.TextField(null=True, blank=True)
+    file = models.FileField(upload_to=user_directory_path, null=True, blank=True, validators=[
+        FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']),
+        fileSizeValidator
+    ])
+
+    def __str__(self):
+        contents = f': "{self.contents[:20]}"' if self.contents else ''
+        file = f' [{self.file}]' if self.file else ''
+        action = f'+{self.amount}' if self.amount else self.get_action_display()
+        return f'{self.user} [{action}] {self.income}{file}{contents}'

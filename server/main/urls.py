@@ -13,4 +13,10 @@ urlpatterns = [
   path('events/', views.EventsView.as_view()),  # type: ignore
   path('application/<int:pk>/events/', views.ApplicationEventsView.as_view()),  # type: ignore
   path('event/<int:pk>', views.EventView.as_view()),  # type: ignore
+  path('incomes/', views.IncomesView.as_view()),  # type: ignore
+  path('incomes/new/', views.NewIncomeView.as_view()),  # type: ignore
+  path('income/<int:pk>/', views.IncomeView.as_view()),  # type: ignore
+  path('receipts/', views.ReceiptsView.as_view()),  # type: ignore
+  path('income/<int:pk>/receipts/', views.IncomeReceiptsView.as_view()),  # type: ignore
+  path('receipt/<int:pk>/', views.ReceiptView.as_view()),  # type: ignore
 ]

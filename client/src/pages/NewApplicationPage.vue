@@ -3,7 +3,7 @@ import axios from 'axios';
 import { api, type User, type Destination } from '@/api';
 import { messageErrors, user } from '@/state';
 import { FormErrors } from '@/errors';
-import { ApplicationFields, EventFields, DestinationFields } from '@/forms';
+import { ApplicationFields, DestinationFields } from '@/forms';
 import { choices, Category, Department, Currency } from '@/enums';
 
 import FileUpload from './components/FileUpload.vue';

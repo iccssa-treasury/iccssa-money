@@ -5,3 +5,5 @@ from .models import *
 admin.site.register(Destination)
 admin.site.register(Application)
 admin.site.register(Event)
+admin.site.register(Income)
+admin.site.register(Receipt)

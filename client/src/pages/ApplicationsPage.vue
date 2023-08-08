@@ -18,7 +18,7 @@ export default {
       loading: true,
       applications: new Array<Application>(),
       show_irrelevant: false,
-      users: new Map<number, User>(),
+      users: new Map<number, string>(),
     };
   },
   async created() {
@@ -28,7 +28,7 @@ export default {
       // console.log(data);
       this.applications = (await api.get('main/applications/')).data as Application[];
       for (const user of (await api.get('accounts/users/')).data as User[]) {
-        this.users.set(user.pk, user);
+        this.users.set(user.pk, user.name??'');
       }
       this.loading = false;
     } catch (e) {
@@ -71,7 +71,7 @@ export default {
               <td>{{ Department[application.department] }}</td>
               <td>
                 <!-- <img class="ui bordered avatar image" :src="users.get(application.user)?.avatar" /> -->
-                {{ users.get(application.user)?.name }}
+                {{ users.get(application.user) }}
               </td>
               <td>{{ application.reason }}</td>
               <td>{{ `${currency_symbol(application.currency)}${application.amount}` }}</td>

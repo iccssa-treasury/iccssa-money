@@ -31,4 +31,22 @@ class EventSerializer(serializers.ModelSerializer):
       'action', 'contents', 'file',
     ]
     read_only_fields = ['pk', 'timestamp']
-    
+
+class IncomeSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = Income
+    fields = [
+      'pk', 'user', 'department',
+      'currency', 'amount', 'reason',
+      'received', 'level',
+    ]
+    read_only_fields = ['pk']
+
+class ReceiptSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = Receipt
+    fields = [
+      'pk', 'user', 'income', 'timestamp',
+      'amount', 'action', 'contents', 'file',
+    ]
+    read_only_fields = ['pk', 'timestamp']

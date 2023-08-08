@@ -54,15 +54,19 @@ export default {
       <router-link to="/" class="header item">
         <span>帝国财务</span>
       </router-link>
-      <router-link v-if="user" to="/me/applications/" class="item" :class="{ active: currentPathIs('/me/applications/') }">
+      <router-link v-if="user?.application_level!<5" to="/me/applications/" class="item" :class="{ active: currentPathIs('/me/applications/') }">
         <i class="file invoice dollar icon" />
         <span>报销申请</span>
       </router-link>
-      <router-link v-if="user" to="/applications/" class="item" :class="{ active: currentPathIs('/applications/') }">
+      <router-link v-if="user?.representative" to="/incomes/" class="item" :class="{ active: currentPathIs('/incomes/') }">
+        <i class="coins icon" />
+        <span>收入记录</span>
+      </router-link>
+      <router-link v-if="user?.application_level!<5" to="/applications/" class="item" :class="{ active: currentPathIs('/applications/') }">
         <i class="balance scale icon" />
         <span>财务审核</span>
       </router-link>
-      <router-link v-if="user" to="/me/destinations/" class="item" :class="{ active: currentPathIs('/me/destinations/') }">
+      <router-link v-if="user?.application_level!<5" to="/me/destinations/" class="item" :class="{ active: currentPathIs('/me/destinations/') }">
         <i class="credit card outline icon" />
         <span>账户管理</span>
       </router-link>

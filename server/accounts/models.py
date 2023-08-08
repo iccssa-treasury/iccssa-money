@@ -47,17 +47,17 @@ class Privilege(models.IntegerChoices):
 
 # CSSA departments
 class Department(models.IntegerChoices):
-    UNDEFINED = 0, '未分配'
-    PRESIDENT = 1, '主席团'
-    SECRETARY = 2, '秘书处'
-    TREASURER = 3, '财务处'
-    CAREERS = 4, '事业部'
-    MEDIA = 5, '媒体部'
-    SPONSORSHIP = 6, '赞助部'
-    ARTS = 7, '文艺部'
-    CULTURE = 8, '文化部'
-    ENTERTAINMENT = 9, '外联部'
-    SPORTS = 10, '体育部'
+  UNDEFINED = 0, '未分配'
+  PRESIDENT = 1, '主席团'
+  SECRETARY = 2, '秘书处'
+  TREASURER = 3, '财务处'
+  CAREERS = 4, '事业部'
+  MEDIA = 5, '媒体部'
+  SPONSORSHIP = 6, '赞助部'
+  ARTS = 7, '文艺部'
+  CULTURE = 8, '文化部'
+  ENTERTAINMENT = 9, '外联部'
+  SPORTS = 10, '体育部'
     
 
 class User(AbstractBaseUser):
@@ -70,6 +70,7 @@ class User(AbstractBaseUser):
   approval_level = models.IntegerField(choices=Privilege.choices, default=Privilege.VISITOR)
   application_level = models.IntegerField(choices=Privilege.choices, default=Privilege.VISITOR)
   department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
+  representative = models.BooleanField(default=False) # Whether the user has the right to sign contracts
 
   avatar = models.ImageField(upload_to=user_directory_path, blank=True)
   bio = models.TextField(blank=True)
