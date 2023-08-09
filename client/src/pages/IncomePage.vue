@@ -2,18 +2,18 @@
 import { api, type User, type Receipt, type Income } from '@/api';
 import { messageErrors, user } from '@/state';
 import { ReceiptFields } from '@/forms';
-import { Action, Level, Department, Currency, currency_symbol, level_status, level_icon } from '@/enums';
+import { Action, Level, Department, currency_symbol, level_status, level_icon } from '@/enums';
 import defaultAvatar from '@/assets/default-avatar.png';
 
-import IncomeReceipt from './components/IncomeReceipt.vue';
+import ApplicationEvent from './components/ApplicationEvent.vue';
 import FileUpload from './components/FileUpload.vue';
 
 export default {
-  components: { IncomeReceipt, FileUpload },
+  components: { ApplicationEvent, FileUpload },
   setup() {
     return {
       user,
-      Action, Level, Department, Currency, 
+      Action, Level, Department, 
       currency_symbol, level_status, level_icon
     };
   },
@@ -174,11 +174,11 @@ export default {
         </tr>
       </tfoot>
     </table>
-    <div class="ui divider"></div>
-    <div class="ui divided selection list">
+    <div class="ui big comments">
+      <!-- <h2 class="ui dividing header">合同时间线</h2> -->
       <div v-for="receipt in receipts" :key="receipt.pk" class="item">
-        <income-receipt
-          :time="new Date(receipt.timestamp).toLocaleString()"
+        <application-event
+          :time="receipt.timestamp"
           :avatar="avatar(receipt.user)"
           :name="users.get(receipt.user)?.name??''"
           :action="Action[receipt.action]"

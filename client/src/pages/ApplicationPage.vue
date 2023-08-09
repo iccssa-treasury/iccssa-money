@@ -2,7 +2,7 @@
 import { api, type User, type Event, type Application } from '@/api';
 import { messageErrors, user } from '@/state';
 import { EventFields } from '@/forms';
-import { Action, Level, Category, Department, Currency, currency_symbol, level_status, level_icon } from '@/enums';
+import { Action, Level, Category, Department, currency_symbol, level_status, level_icon } from '@/enums';
 import defaultAvatar from '@/assets/default-avatar.png';
 
 import ApplicationEvent from './components/ApplicationEvent.vue';
@@ -13,7 +13,7 @@ export default {
   setup() {
     return {
       user,
-      Action, Level, Category, Department, Currency, 
+      Action, Level, Category, Department,
       currency_symbol, level_status, level_icon
     };
   },
@@ -169,11 +169,11 @@ export default {
         </tr>
       </tfoot>
     </table>
-    <div class="ui divider"></div>
-    <div class="ui divided selection list">
+    <div class="ui big comments">
+      <!-- <h2 class="ui dividing header">申请时间线</h2> -->
       <div v-for="event in events" :key="event.pk" class="item">
         <application-event
-          :time="new Date(event.timestamp).toLocaleString()"
+          :time="event.timestamp"
           :avatar="avatar(event.user)"
           :name="users.get(event.user)?.name??''"
           :action="Action[event.action]"
