@@ -41,6 +41,16 @@ export default {
       messageErrors(e);
     }
   },
+  computed: {
+    computed_amount: {
+      get() {
+        return this.fields.amount === 0? '': this.fields.amount / 100;
+      },
+      set(value: number) {
+        this.fields.amount = (value * 100) | 0;
+      },
+    }
+  },
   methods: {
     async submit() {
       if (user.value === undefined) return;
@@ -86,7 +96,7 @@ export default {
         <label>应收金额</label>
         <div class="fields">
           <div class="seven wide field" :class="{ error: errors.fields.amount.length > 0 }">
-            <input placeholder="0.00" v-model="fields.amount" @input="errors.fields.amount.length = 0">
+            <input placeholder="0.00" v-model="computed_amount" @input="errors.fields.amount.length = 0">
           </div>
           <div class="three wide field" :class="{ error: errors.fields.currency.length > 0 }">
             <select class="ui selection dropdown" v-model="fields.currency">

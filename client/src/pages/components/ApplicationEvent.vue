@@ -15,7 +15,7 @@ export default {
     // For application events
     category: { type: String, required: false },
     // For income receipts
-    currency: { type: String, required: false },
+    display_amount: { type: String, required: false },
     amount: {type: Number, required: false},
   },
   computed: {
@@ -35,7 +35,7 @@ export default {
       } else {
         // For income receipts
         return this.amount! > 0 ? 
-          `确认收款 ${this.currency}${this.amount}` : 
+          `确认收款 ${this.display_amount}` : 
           `${this.action}了收款合同`;
       }
     },

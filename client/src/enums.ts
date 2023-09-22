@@ -78,3 +78,7 @@ export function currency_symbol(currency: Currency) {
     case 1: return '¥';
   }
 }
+
+export function display_amount(currency: Currency, amount: number) {
+  return currency_symbol(currency) + (amount/100).toFixed(2);
+}

@@ -1,7 +1,7 @@
 <script lang="ts">
 import { api, type Income, type User } from '@/api';
 import { messageErrors, user } from '@/state';
-import { Department, Level, currency_symbol, level_status, level_icon } from '@/enums';
+import { Department, Level, display_amount, level_status, level_icon } from '@/enums';
 import LoadingText from './components/LoadingText.vue';
 
 export default {
@@ -10,7 +10,7 @@ export default {
     return {
       user,
       Department, Level,
-      currency_symbol, level_status, level_icon,
+      display_amount, level_status, level_icon,
     };
   },
   data() {
@@ -65,7 +65,7 @@ export default {
             <tr @click="navigate">
               <td>{{ Department[income.department] }}</td>
               <td>{{ income.reason }}</td>
-              <td>{{ `${currency_symbol(income.currency)}${income.amount}` }}</td>
+              <td>{{ display_amount(income.currency, income.amount) }}</td>
               <td :class="level_status(income.level)">
                 <i class="icon" :class="level_icon(income.level)"></i>
                 {{ Level[income.level] }}

@@ -24,7 +24,7 @@ export class ApplicationFields {
   account_number: string = '';
   business: boolean = false;
   currency: number = 0;
-  amount: number | null = null;
+  amount: number = 0;
   reason: string = '';
   // Event fields
   contents: string = '';
@@ -40,7 +40,7 @@ export class EventFields {
 export class IncomeFields {
   department: number = 0;
   currency: number = 0;
-  amount: number | null = null;
+  amount: number = 0;
   reason: string = '';
   // Event fields
   contents: string = '';
@@ -49,6 +49,7 @@ export class IncomeFields {
 
 export class ReceiptFields {
   action: number = 0;
+  currency: number = 0;
   amount: number = 0;
   contents: string = '';
   file: null | Blob = null;

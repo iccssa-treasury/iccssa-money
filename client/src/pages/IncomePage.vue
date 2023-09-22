@@ -2,7 +2,7 @@
 import { api, type User, type Receipt, type Income } from '@/api';
 import { messageErrors, user } from '@/state';
 import { ReceiptFields } from '@/forms';
-import { Action, Level, Department, currency_symbol, level_status, level_icon } from '@/enums';
+import { Action, Currency, Level, Department, currency_symbol, display_amount, level_status, level_icon } from '@/enums';
 import defaultAvatar from '@/assets/default-avatar.png';
 
 import ApplicationEvent from './components/ApplicationEvent.vue';
@@ -13,8 +13,8 @@ export default {
   setup() {
     return {
       user,
-      Action, Level, Department, 
-      currency_symbol, level_status, level_icon
+      Action, Currency, Level, Department, 
+      currency_symbol, display_amount, level_status, level_icon
     };
   },
   props: {
@@ -26,7 +26,8 @@ export default {
       income: null as Income | null,
       receipts: new Array<Receipt>(),
       users: new Map<number, User>(),
-      amount: null as null | number,
+      currency: 0,
+      amount: 0,
       contents: '',
       file: null as null | Blob,
     };
@@ -37,6 +38,7 @@ export default {
       if (data) user.value = data as User;
       // console.log(data);
       this.income = (await api.get(`main/income/${this.pk}/`)).data as Income;
+      this.currency = this.income.currency;
       this.receipts = (await api.get(`main/income/${this.pk}/receipts/`)).data as Receipt[];
       for (const user of (await api.get('accounts/users/')).data as User[]) {
         this.users.set(user.pk, user);
@@ -46,6 +48,12 @@ export default {
     }
   },
   computed: {
+    received_amount() {
+      const amounts = [0,1].map(i => this.income?.received[Currency[i]]);
+      const displays = [0,1].map(i => display_amount(i, amounts[i]));
+      const display = displays.filter((_, i) => amounts[i])
+      return display.length ? display.join(' + ') : displays[this.income?.currency!];
+    },
     can_cancel() {
       if (user.value === undefined || this.income === null) return false;
       return user.value.pk === this.income.user && this.income.level > 0;
@@ -54,9 +62,26 @@ export default {
       if (user.value === undefined || this.income === null) return false;
       return user.value.approval_level === 1 && this.income.level > 0;
     },
+    can_receive_full() {
+      return this.has_receive_access && 
+        this.currency === this.income?.currency && 
+        this.income?.received[Currency[1 - this.income?.currency]] === 0;
+    },
+    can_complete() {
+      return this.has_receive_access && 
+        (this.income?.received[Currency[this.income?.currency]] === this.income?.amount ||
+          this.income?.received[Currency[1 - this.income?.currency]] > 0);
+    },
     can_receive() {
-      if (user.value === undefined || this.income === null) return false;
-      return this.has_receive_access && (this.amount ?? 0) > 0;
+      return this.has_receive_access && this.amount > 0;
+    },
+    computed_amount: {
+      get() {
+        return this.amount === 0? '': this.amount / 100;
+      },
+      set(value: number) {
+        this.amount = (value * 100) | 0;
+      },
     },
   },
   methods: {
@@ -65,7 +90,8 @@ export default {
         this.waiting = true;
         const receipt_fields = new ReceiptFields();
         receipt_fields.action = action;
-        receipt_fields.amount = this.amount??0;
+        receipt_fields.currency = this.currency;
+        receipt_fields.amount = this.amount;
         receipt_fields.contents = this.contents;
         receipt_fields.file = this.file;
         await api.post(`main/income/${income}/receipts/`, receipt_fields, {
@@ -74,7 +100,7 @@ export default {
         // manual update
         this.income = (await api.get(`main/income/${this.pk}/`)).data as Income;
         this.receipts = (await api.get(`main/income/${this.pk}/receipts/`)).data as Receipt[];
-        this.amount = null;
+        this.amount = 0;
         this.contents = '';
         this.file = null;
       } catch (e) {
@@ -82,8 +108,11 @@ export default {
       }
       this.waiting = false;
     },
+    switch_currency() {
+      this.currency = 1 - this.currency;
+    },
     receive_full() {
-      this.amount = this.income?.amount! - this.income?.received!;
+      this.amount = this.income?.amount! - this.income?.received[Currency[this.income?.currency]];
     },
     avatar(pk: number) {
       return this.users.get(pk)?.avatar ?? defaultAvatar;
@@ -113,11 +142,11 @@ export default {
         </tr>
         <tr>
           <td>应收金额</td>
-          <td>{{ `${currency_symbol(income.currency)}${income.amount}` }}</td>
+          <td>{{ display_amount(income.currency, income.amount) }}</td>
         </tr>
         <tr>
           <td>实收金额</td>
-          <td>{{ `${currency_symbol(income.currency)}${income.received}` }}</td>
+          <td>{{ received_amount }}</td>
         </tr>
         <tr>
           <td>当前状态</td>
@@ -130,9 +159,9 @@ export default {
           <td>确认收款</td>
           <td>
             <div class="ui labeled action input">
-              <label for="amount" class="ui label">{{ currency_symbol(income.currency) }}</label>
-              <input placeholder="0.00" v-model="amount" id="amount">
-              <button class="ui teal button" @click="receive_full">
+              <label for="amount" class="ui label" @click="switch_currency">{{ currency_symbol(currency) }}</label>
+              <input placeholder="0.00" v-model="computed_amount" id="amount">
+              <button class="ui teal button" @click="receive_full" :disabled="!can_receive_full">
                 <i class="check icon"></i>全额收款
               </button>
             </div>
@@ -162,6 +191,10 @@ export default {
               @click="receipt(pk, 4)">
               <i class="times icon"></i>删除
             </button>
+            <button v-if="can_complete" class="ui primary positive button" :class="{ disabled: waiting, loading: waiting }"
+              @click="receipt(pk, 5)">
+              <i class="check icon"></i>完成
+            </button>
             <button v-if="!can_receive" class="ui right floated primary button" :class="{ disabled: waiting, loading: waiting }"
               @click="receipt(pk, 0)">
               <i class="comment icon"></i>评论
@@ -182,7 +215,7 @@ export default {
           :avatar="avatar(receipt.user)"
           :name="users.get(receipt.user)?.name??''"
           :action="Action[receipt.action]"
-          :currency="currency_symbol(income.currency)!"
+          :display_amount="display_amount(receipt.currency, receipt.amount)"
           :amount="receipt.amount"
           :contents="receipt.contents"
           :file="receipt.file"

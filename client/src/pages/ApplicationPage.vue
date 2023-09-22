@@ -2,7 +2,7 @@
 import { api, type User, type Event, type Application } from '@/api';
 import { messageErrors, user } from '@/state';
 import { EventFields } from '@/forms';
-import { Action, Level, Category, Department, currency_symbol, level_status, level_icon } from '@/enums';
+import { Action, Level, Category, Department, display_amount, level_status, level_icon } from '@/enums';
 import defaultAvatar from '@/assets/default-avatar.png';
 
 import ApplicationEvent from './components/ApplicationEvent.vue';
@@ -14,7 +14,7 @@ export default {
     return {
       user,
       Action, Level, Category, Department,
-      currency_symbol, level_status, level_icon
+      display_amount, level_status, level_icon,
     };
   },
   props: {
@@ -105,7 +105,7 @@ export default {
         </tr>
         <tr>
           <td>申请金额</td>
-          <td>{{ `${currency_symbol(application.currency)}${application.amount}` }}</td>
+          <td>{{ display_amount(application.currency, application.amount) }}</td>
         </tr>
         <tr>
           <td>收款账户</td>

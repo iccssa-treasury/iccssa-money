@@ -321,6 +321,8 @@ class NewIncomeView(views.APIView):
       'user': user.pk,
       'income': income.pk,
       'action': Action.CREATE,
+      'currency': request.data.get('currency'),
+      'amount': 0,
       'contents': request.data.get('contents'),
       'file': request.data.get('file'),
     })
@@ -402,6 +404,7 @@ class IncomeReceiptsView(generics.ListCreateAPIView):
     user = request.user
     income = get_object_or_404(Income, pk=pk)
     action = int(request.data.get('action'))
+    currency = int(request.data.get('currency'))
     amount = int(request.data.get('amount'))
     if not can_post_receipt(user, income, action, amount):
       self.permission_denied(request)
@@ -409,6 +412,7 @@ class IncomeReceiptsView(generics.ListCreateAPIView):
       'user': user.pk,
       'income': income.pk,
       'action': action,
+      'currency': currency,
       'amount': amount,
       'contents': request.data.get('contents'),
       'file': request.data.get('file'),
@@ -417,17 +421,7 @@ class IncomeReceiptsView(generics.ListCreateAPIView):
     serializer.save()
     # Update income amount and level.
     if action == Action.SUPPORT:
-      income.received += amount
-      # Post COMPLETE receipt if income is fully received.
-      if income.received >= income.amount:
-        serializer = ReceiptSerializer(data={
-          'user': user.pk,
-          'income': income.pk,
-          'action': Action.COMPLETE,
-        })
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        income.level = Level.COMPLETED
+      income.received[Currency.labels[currency]] += amount
     else:
       income.level = result_income_level(user, action)
     income.save()

@@ -3,7 +3,6 @@ from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.core.validators import MinLengthValidator
 from accounts.models import User, Department
-from uuid import uuid4
 
 # Application category
 class Category(models.IntegerChoices):
@@ -35,6 +34,9 @@ class Currency(models.IntegerChoices):
     GBP = 0, '英镑'
     CNY = 1, '人民币'
 
+def display_amount(currency_display: str, amount: int) -> str:
+    return f'{format(amount/100, ".2f")} {currency_display}'
+
 class Destination(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
@@ -60,13 +62,13 @@ class Application(models.Model):
     business = models.BooleanField(default=False)
 
     currency = models.IntegerField(choices=Currency.choices, default=Currency.GBP)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.IntegerField()
     reason = models.TextField()
 
     level = models.IntegerField(choices=Level.choices, default=Level.AWAIT_MEMBER)
     
     def __str__(self):
-        return f'[{self.get_department_display()}] - {self.user} {self.get_category_display()} {self.amount} {self.get_currency_display()}'
+        return f'[{self.get_department_display()}] - {self.user} {self.get_category_display()} {display_amount(self.get_currency_display(), self.amount)}'
 
 def user_directory_path(self: models.Model, filename: str) -> str:
     return 'accounts/user_{0}/{1}'.format(self.user.pk, filename)
@@ -92,19 +94,22 @@ class Event(models.Model):
         file = f' [{self.file}]' if self.file else ''
         return f'{self.user} [{self.get_action_display()}] {self.application}{file}{contents}'
 
+def received_json_default():
+    return {label: 0 for label in Currency.labels}
+
 class Income(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)
     department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
 
     currency = models.IntegerField(choices=Currency.choices, default=Currency.GBP)
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    amount = models.IntegerField()
     reason = models.TextField()
 
-    received = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    received = models.JSONField(default=received_json_default)
     level = models.IntegerField(choices=Level.choices, default=Level.ACCEPTED)
 
     def __str__(self):
-        return f'[{self.get_department_display()}] - {self.reason} {self.amount} {self.get_currency_display()}'
+        return f'[{self.get_department_display()}] - {self.reason} {display_amount(self.get_currency_display(), self.amount)}'
 
 class Receipt(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -112,7 +117,8 @@ class Receipt(models.Model):
 
     timestamp = models.DateTimeField(auto_now_add=True)
     action = models.IntegerField(choices=Action.choices, default=Action.SUPPORT)
-    amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    currency = models.IntegerField(choices=Currency.choices, default=Currency.GBP)
+    amount = models.IntegerField()
     contents = models.TextField(null=True, blank=True)
     file = models.FileField(upload_to=user_directory_path, null=True, blank=True, validators=[
         FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']),
@@ -122,5 +128,5 @@ class Receipt(models.Model):
     def __str__(self):
         contents = f': "{self.contents[:20]}"' if self.contents else ''
         file = f' [{self.file}]' if self.file else ''
-        action = f'+{self.amount}' if self.amount else self.get_action_display()
+        action = f'+{display_amount(self.get_currency_display(), self.amount)}' if self.amount else self.get_action_display()
         return f'{self.user} [{action}] {self.income}{file}{contents}'

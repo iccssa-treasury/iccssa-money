@@ -12,6 +12,10 @@ export const api = axios.create({
 
 // API schemas.
 
+interface Json {
+  [key: string]: any;
+}
+
 export interface User {
   pk: number;
   username: string;
@@ -77,7 +81,7 @@ export interface Income {
   currency: number;
   amount: number;
   reason: string;
-  received: number;
+  received: Json;
   level: number;
 }
 
@@ -87,6 +91,7 @@ export interface Receipt {
   income: number;
   timestamp: string;
   action: number;
+  currency: number;
   amount: number;
   contents: string;
   file: string;

@@ -47,6 +47,7 @@ class ReceiptSerializer(serializers.ModelSerializer):
     model = Receipt
     fields = [
       'pk', 'user', 'income', 'timestamp',
-      'amount', 'action', 'contents', 'file',
+      'currency', 'amount', 
+      'action', 'contents', 'file',
     ]
     read_only_fields = ['pk', 'timestamp']
