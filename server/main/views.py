@@ -66,10 +66,13 @@ class UserDestinationsView(views.APIView):
     user = request.user
     serializer = DestinationSerializer(data={
       'user': user.pk,
+      'platform': request.data.get('platform'),
       'name': request.data.get('name'),
       'sort_code': request.data.get('sort_code'),
       'account_number': request.data.get('account_number'),
       'business': request.data.get('business'),
+      'card_number': request.data.get('card_number'),
+      'bank_name': request.data.get('bank_name'),
       'public': request.data.get('public'),
       'star': request.data.get('star'),
     })
@@ -148,10 +151,13 @@ class NewApplicationView(views.APIView):
       'user': user.pk,
       'department': department,
       'category': request.data.get('category'),
+      'platform': request.data.get('platform'),
       'name': request.data.get('name'),
       'sort_code': request.data.get('sort_code'),
       'account_number': request.data.get('account_number'),
       'business': request.data.get('business'),
+      'card_number': request.data.get('card_number'),
+      'bank_name': request.data.get('bank_name'),
       'currency': request.data.get('currency'),
       'amount': request.data.get('amount'),
       'reason': request.data.get('reason'),

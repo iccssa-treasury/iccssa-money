@@ -72,6 +72,12 @@ export enum Currency {
   人民币 = 1,
 }
 
+export enum Platform {
+  银行转帐 = 1,
+  支付宝 = 2,
+  微信支付 = 3,
+}
+
 export function currency_symbol(currency: Currency) {
   switch (currency) {
     case 0: return '£';

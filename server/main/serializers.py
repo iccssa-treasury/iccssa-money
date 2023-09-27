@@ -3,25 +3,50 @@ from rest_framework.serializers import ValidationError
 from .models import *
 
 
+class DestinationValidator:
+  def __call__(self, attrs):
+    platform = attrs['platform']
+    if platform == Platform.BANK_GBP:
+      if not attrs['sort_code']:
+        raise ValidationError({'sort_code': 'This field is required.'})
+      if not attrs['account_number']:
+        raise ValidationError({'account_number': 'This field is required.'})
+    else:
+      if not attrs['card_number']:
+        raise ValidationError({'card_number': 'This field is required.'})
+      if platform == Platform.BANK_CNY:
+        if not attrs['bank_name']:
+          raise ValidationError({'bank_name': 'This field is required.'})
+
 class DestinationSerializer(serializers.ModelSerializer):
   class Meta:
     model = Destination
     fields = [
-      'pk', 'user', 'name', 'sort_code',
-      'account_number', 'business', 'public', 'star',
+      'pk', 'user', 'platform', 'name', 
+      'sort_code', 'account_number', 'business', 
+      'card_number', 'bank_name',
+      'public', 'star',
     ]
     read_only_fields = ['pk']
+
+  def validate(self, attrs):
+    DestinationValidator()(attrs)
+    return attrs
 
 class ApplicationSerializer(serializers.ModelSerializer):
   class Meta:
     model = Application
     fields = [
-      'pk', 'user', 'department', 'category',
+      'pk', 'user', 'department', 'category', 'platform', 
       'name', 'sort_code', 'account_number', 'business',
-      'currency', 'amount', 'reason',
-      'level',
+      'card_number', 'bank_name', 'currency', 
+      'amount', 'reason', 'level',
     ]
     read_only_fields = ['pk']
+
+  def validate(self, attrs):
+    DestinationValidator()(attrs)
+    return attrs
 
 class EventSerializer(serializers.ModelSerializer):
   class Meta:

@@ -1,8 +1,8 @@
 <script lang="ts">
-import { api, type User, type Event, type Application } from '@/api';
+import { api, type User, type Event, type Application, destination_display } from '@/api';
 import { messageErrors, user } from '@/state';
 import { EventFields } from '@/forms';
-import { Action, Level, Category, Department, display_amount, level_status, level_icon } from '@/enums';
+import { Action, Level, Category, Department, Platform, display_amount, level_status, level_icon } from '@/enums';
 import defaultAvatar from '@/assets/default-avatar.png';
 
 import ApplicationEvent from './components/ApplicationEvent.vue';
@@ -13,8 +13,9 @@ export default {
   setup() {
     return {
       user,
-      Action, Level, Category, Department,
+      Action, Level, Category, Department, Platform,
       display_amount, level_status, level_icon,
+      destination_display
     };
   },
   props: {
@@ -107,11 +108,15 @@ export default {
           <td>申请金额</td>
           <td>{{ display_amount(application.currency, application.amount) }}</td>
         </tr>
+        <tr v-if="application.platform">
+          <td>收款方式</td>
+          <td>{{ Platform[application.platform] }}</td>
+        </tr>
         <tr>
           <td>收款账户</td>
           <td>
             <span v-if="application.business">[B]</span>
-            {{ `${application.name} - ${application.sort_code} - ${application.account_number}` }}
+            {{ destination_display(application) }}
           </td>
         </tr>
         <tr>

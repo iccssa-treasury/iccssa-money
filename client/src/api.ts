@@ -41,10 +41,13 @@ export interface Credential {
 export interface Destination {
   pk: number;
   user: number;
+  platform: number;
   name: string;
   sort_code: string;
   account_number: string;
   business: boolean;
+  card_number: string;
+  bank_name: string;
   public: boolean;
   star: boolean;
 }
@@ -54,10 +57,13 @@ export interface Application {
   user: number;
   department: number;
   category: number;
+  platform: number;
   name: string;
   sort_code: string;
   account_number: string;
   business: boolean;
+  card_number: string;
+  bank_name: string;
   currency: number;
   amount: number;
   reason: string;
@@ -95,4 +101,15 @@ export interface Receipt {
   amount: number;
   contents: string;
   file: string;
+}
+
+export function destination_display(destination: Destination | Application): string {
+  switch (destination.platform) {
+    case 0: // BANK_GBP
+      return `${destination.name} - ${destination.sort_code} - ${destination.account_number}`;
+    case 1: // BANK_CNY
+      return `${destination.name} - ${destination.card_number} [${destination.bank_name}]`;
+    default: // ALIPAY, WECHAT
+      return `${destination.name} - ${destination.card_number}`;
+  }
 }

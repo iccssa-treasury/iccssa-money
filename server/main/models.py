@@ -34,32 +34,52 @@ class Currency(models.IntegerChoices):
     GBP = 0, '英镑'
     CNY = 1, '人民币'
 
+# Payment platform
+class Platform(models.IntegerChoices):
+    BANK_GBP = 0, '英行'
+    BANK_CNY = 1, '中行'
+    ALIPAY = 2, '支付宝'
+    WECHAT = 3, '微信'
+
 def display_amount(currency_display: str, amount: int) -> str:
     return f'{format(amount/100, ".2f")} {currency_display}'
 
 class Destination(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
+    platform = models.IntegerField(choices=Platform.choices, default=Platform.BANK_GBP)
     name = models.CharField(max_length=100)
-    sort_code = models.CharField(max_length=6, validators=[MinLengthValidator(6)])
-    account_number = models.CharField(max_length=8, validators=[MinLengthValidator(8)])
+
+    # BANK_GBP
+    sort_code = models.CharField(max_length=6, validators=[MinLengthValidator(6)], null=True, blank=True)
+    account_number = models.CharField(max_length=8, validators=[MinLengthValidator(8)], null=True, blank=True)
     business = models.BooleanField(default=False)
+
+    # other
+    card_number = models.CharField(max_length=100, null=True, blank=True)
+    bank_name = models.CharField(max_length=100, null=True, blank=True)
 
     public = models.BooleanField(default=True)
     star = models.BooleanField(default=False)
 
     def __str__(self):
-        return f'{self.name} - {self.sort_code} - {self.account_number}'
+        info = f'{self.sort_code} - {self.account_number}' if self.platform == Platform.BANK_GBP else \
+            f'{self.card_number}{f" [{self.bank_name}]" if self.platform == Platform.BANK_CNY else ""}'
+        return f'[{self.get_platform_display()}] - {self.name} - {info}'
 
 class Application(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)
     department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
     category = models.IntegerField(choices=Category.choices, default=Category.REIMBURSEMENT)
 
+    # Destination fields
+    platform = models.IntegerField(choices=Platform.choices, default=Platform.BANK_GBP)
     name = models.CharField(max_length=100)
-    sort_code = models.CharField(max_length=6, validators=[MinLengthValidator(6)])
-    account_number = models.CharField(max_length=8, validators=[MinLengthValidator(8)])
+    sort_code = models.CharField(max_length=6, validators=[MinLengthValidator(6)], null=True, blank=True)
+    account_number = models.CharField(max_length=8, validators=[MinLengthValidator(8)], null=True, blank=True)
     business = models.BooleanField(default=False)
+    card_number = models.CharField(max_length=100, null=True, blank=True)
+    bank_name = models.CharField(max_length=100, null=True, blank=True)
 
     currency = models.IntegerField(choices=Currency.choices, default=Currency.GBP)
     amount = models.IntegerField()
@@ -68,7 +88,8 @@ class Application(models.Model):
     level = models.IntegerField(choices=Level.choices, default=Level.AWAIT_MEMBER)
     
     def __str__(self):
-        return f'[{self.get_department_display()}] - {self.user} {self.get_category_display()} {display_amount(self.get_currency_display(), self.amount)}'
+        return f'[{self.get_department_display()}] - {self.user} {self.get_category_display()} \
+            {display_amount(self.get_currency_display(), self.amount)}'
 
 def user_directory_path(self: models.Model, filename: str) -> str:
     return 'accounts/user_{0}/{1}'.format(self.user.pk, filename)

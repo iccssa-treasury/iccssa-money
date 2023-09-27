@@ -1,10 +1,10 @@
 <script lang="ts">
 import axios from 'axios';
-import { api, type User, type Destination } from '@/api';
+import { api, type User, type Destination, destination_display } from '@/api';
 import { messageErrors, user } from '@/state';
 import { FormErrors } from '@/errors';
 import { ApplicationFields, DestinationFields } from '@/forms';
-import { choices, Category, Department, Currency } from '@/enums';
+import { choices, Category, Department, Currency, Platform } from '@/enums';
 
 import FileUpload from './components/FileUpload.vue';
 
@@ -13,7 +13,8 @@ export default {
   setup() {
     return {
       user,
-      choices, Category, Department, Currency
+      choices, Category, Department, Currency, Platform,
+      destination_display
     };
   },
   data() {
@@ -27,10 +28,13 @@ export default {
       errors: new FormErrors<ApplicationFields>({
         category: [],
         department: [],
+        platform: [],
         name: [],
         sort_code: [],
         account_number: [],
         business: [],
+        card_number: [],
+        bank_name: [],
         currency: [],
         amount: [],
         reason: [],
@@ -47,7 +51,7 @@ export default {
       const destinations = (await api.get('main/destinations/')).data as Destination[];
       this.destinations = destinations.map((dest) => ({ 
         value: dest, 
-        text: `${dest.star ? '★ ' : ''}${dest.name} - ${dest.sort_code} - ${dest.account_number}`, 
+        text: `${dest.star ? '★ ' : ''}${destination_display(dest)}`, 
       }));
       this.fields.department = data.department;
     } catch (e) {
@@ -62,6 +66,15 @@ export default {
       set(value: number) {
         this.fields.amount = (value * 100) | 0;
       },
+    },
+    name_caption() {
+      return this.fields.currency === 0? 'Recipient Name': '收款人姓名';
+    },
+    card_number_caption() {
+      return ['Card Number', '银行卡号', '支付宝账号', '微信号'][this.fields.platform];
+    },
+    filtered_destinations() {
+      return this.destinations.filter((dest) => dest.value.platform === this.fields.platform);
     }
   },
   methods: {
@@ -71,6 +84,7 @@ export default {
         this.errors.clear();
         this.waiting = true;
         this.success = false;
+        this.trim_destination();
         await api.post('main/applications/new/', this.fields, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
@@ -89,11 +103,26 @@ export default {
     },
     async save() {
       const dest_fields = new DestinationFields();
+      dest_fields.platform = this.fields.platform;
       dest_fields.name = this.fields.name;
       dest_fields.sort_code = this.fields.sort_code;
       dest_fields.account_number = this.fields.account_number;
       dest_fields.business = this.fields.business;
+      dest_fields.card_number = this.fields.card_number;
+      dest_fields.bank_name = this.fields.bank_name;
       await api.post('main/me/destinations/', dest_fields);
+    },
+    trim_destination() {
+      if (this.fields.platform > 0) {
+        this.fields.sort_code = '';
+        this.fields.account_number = '';
+        this.fields.business = false;
+      }
+      if (this.fields.platform === 0) this.fields.card_number = '';
+      if (this.fields.platform !== 1) this.fields.bank_name = '';
+    },
+    switch_currency() {
+      this.fields.platform = this.fields.currency;
     },
     fill() {
       // console.log(this.select_dest);
@@ -131,23 +160,28 @@ export default {
           </select>
         </div>
       </div>
-      <div class="field" :class="{ error: errors.fields.amount.length > 0 || errors.fields.currency.length > 0 }">
-        <label>申请金额</label>
-        <div class="fields">
-          <div class="seven wide field" :class="{ error: errors.fields.amount.length > 0 }">
-            <input placeholder="0.00" v-model="computed_amount" @input="errors.fields.amount.length = 0">
-          </div>
-          <div class="three wide field" :class="{ error: errors.fields.currency.length > 0 }">
-            <select class="ui selection dropdown" v-model="fields.currency">
-              <option v-for="choice in choices(Currency)" :value="choice.value">{{ choice.text }}</option>
-            </select>
-          </div>
+      <div class="fields">
+        <div class="seven wide field" :class="{ error: errors.fields.amount.length > 0 }">
+          <label>申请金额</label>
+          <input placeholder="0.00" v-model="computed_amount" @input="errors.fields.amount.length = 0">
+        </div>
+        <div class="three wide field" :class="{ error: errors.fields.currency.length > 0 }">
+          <label>币种</label>
+          <select class="ui selection dropdown" v-model="fields.currency" @change="switch_currency">
+            <option v-for="choice in choices(Currency)" :value="choice.value">{{ choice.text }}</option>
+          </select>
+        </div>
+        <div class="three wide field" v-if="fields.currency">
+          <label>收款方式</label>
+          <select class="ui selection dropdown" v-model="fields.platform">
+            <option v-for="choice in choices(Platform)" :value="choice.value">{{ choice.text }}</option>
+          </select>
         </div>
       </div>
       <h4 class="ui dividing header">收款账户</h4>
       <div class="fields">
         <div class="fourteen wide field">
-          <sui-dropdown search selection v-model="select_dest" :options="destinations" placeholder="从现有账户中搜索…" />
+          <sui-dropdown search selection v-model="select_dest" :options="filtered_destinations" placeholder="从现有账户中搜索…" />
         </div>
         <div class="one wide field">
           <button class="ui icon button" :class="{ disabled: waiting, loading: waiting }" @click.prevent="fill">
@@ -157,23 +191,31 @@ export default {
       </div>
       <div class="fields">
         <div class="six wide field" :class="{ error: errors.fields.name.length > 0 }">
-          <label>Recipient Name</label>
-          <input placeholder="Recipient Name" v-model="fields.name" @input="errors.fields.name.length = 0" />
+          <label>{{ name_caption }}</label>
+          <input :placeholder="name_caption" v-model="fields.name" @input="errors.fields.name.length = 0" />
         </div>
-        <div class="four wide field" :class="{ error: errors.fields.sort_code.length > 0 }">
+        <div v-if="!fields.platform" class="four wide field" :class="{ error: errors.fields.sort_code.length > 0 }">
           <label>Sort Code</label>
           <input placeholder="Sort Code" maxlength="6" v-model="fields.sort_code"
             @input="errors.fields.sort_code.length = 0" />
         </div>
-        <div class="four wide field" :class="{ error: errors.fields.account_number.length > 0 }">
+        <div v-if="!fields.platform" class="four wide field" :class="{ error: errors.fields.account_number.length > 0 }">
           <label>Account Number</label>
           <input placeholder="Account No." maxlength="8" v-model="fields.account_number"
             @input="errors.fields.account_number.length = 0" />
         </div>
-        <div class="two wide field" :class="{ error: errors.fields.business.length > 0 }">
+        <div v-if="!fields.platform" class="two wide field" :class="{ error: errors.fields.business.length > 0 }">
           <label>Business</label>
           <sui-checkbox toggle v-model="fields.business" />
         </div>
+        <div v-if="fields.platform" class="ten wide field" :class="{ error: errors.fields.card_number.length > 0 }">
+          <label>{{ card_number_caption }}</label>
+          <input :placeholder="card_number_caption" v-model="fields.card_number" @input="errors.fields.card_number.length = 0" />
+        </div>
+      </div>
+      <div v-if="fields.platform === 1" class="field" :class="{ error: errors.fields.bank_name.length > 0 }">
+        <label>开户行名称</label>
+        <input placeholder="开户行名称" v-model="fields.bank_name" @input="errors.fields.bank_name.length = 0" />
       </div>
       <div class="field">
         <sui-checkbox toggle v-model="save_dest" label="保存到我的账户列表" />
