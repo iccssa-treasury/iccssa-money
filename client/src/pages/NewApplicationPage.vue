@@ -132,6 +132,8 @@ export default {
       this.fields.sort_code = dest.sort_code;
       this.fields.account_number = dest.account_number;
       this.fields.business = dest.business;
+      this.fields.card_number = dest.card_number;
+      this.fields.bank_name = dest.bank_name;
     },
   },
 };

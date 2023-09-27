@@ -127,10 +127,10 @@ class UserApplicationsView(views.APIView):
     return Response(ApplicationSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
 
-def can_post_application(user: User, department: str) -> bool:
+def can_post_application(user: User, department: int) -> bool:
   # if not isinstance(user, User):
   #   return False
-  if user.application_level >= Privilege.COMMITTEE:
+  if user.application_level <= Privilege.COMMITTEE:
     return True
   # Members can only submit applications for their own department.
   return user.department == department
@@ -145,7 +145,7 @@ class NewApplicationView(views.APIView):
   def post(self, request: Request) -> Response:
     user = request.user
     department = request.data.get('department')
-    if not can_post_application(user, department):
+    if not can_post_application(user, int(department)):
       self.permission_denied(request)
     serializer = ApplicationSerializer(data={
       'user': user.pk,
