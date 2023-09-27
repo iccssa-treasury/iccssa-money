@@ -7,14 +7,14 @@ def update_integer_amounts(apps, schema_editor):
     Income = apps.get_model("main", "Income")
     Receipt = apps.get_model("main", "Receipt")
     for application in Application.objects.all():
-        application.amount = int(application.amount * 100)
+        application.amount = int(round(application.amount * 100))
         application.save()
     for income in Income.objects.all():
-        income.amount = int(income.amount * 100)
+        income.amount = int(round(income.amount * 100))
         income.received = {label: int(amount * 100) for label, amount in income.received.items()}
         income.save()
     for receipt in Receipt.objects.all():
-        receipt.amount = int(receipt.amount * 100)
+        receipt.amount = int(round(receipt.amount * 100))
         receipt.save()
 
 class Migration(migrations.Migration):

@@ -64,7 +64,7 @@ export default {
         return this.fields.amount === 0? '': this.fields.amount / 100;
       },
       set(value: number) {
-        this.fields.amount = (value * 100) | 0;
+        this.fields.amount = Math.round(value * 100);
       },
     },
     name_caption() {

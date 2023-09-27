@@ -80,7 +80,7 @@ export default {
         return this.amount === 0? '': this.amount / 100;
       },
       set(value: number) {
-        this.amount = (value * 100) | 0;
+        this.amount = Math.round(value * 100);
       },
     },
   },
