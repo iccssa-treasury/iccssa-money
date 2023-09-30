@@ -27,6 +27,7 @@ export interface User {
   application_level: number;
   department: number;
   representative: boolean;
+  notification_settings: Json;
   avatar: string;
   bio: string;
   date_joined: string;

@@ -58,7 +58,12 @@ class Department(models.IntegerChoices):
   CULTURE = 8, '文化部'
   ENTERTAINMENT = 9, '外联部'
   SPORTS = 10, '体育部'
-    
+
+# Notification levels
+class Notification(models.IntegerChoices):
+  NONE = 0, '无通知'
+  PARTIAL = 1, '部分通知'
+  ALL = 2, '全部通知'
 
 class User(AbstractBaseUser):
   username = models.CharField(max_length=150, unique=True, validators=[username_validator])
@@ -71,6 +76,8 @@ class User(AbstractBaseUser):
   application_level = models.IntegerField(choices=Privilege.choices, default=Privilege.VISITOR)
   department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
   representative = models.BooleanField(default=False) # Whether the user has the right to sign contracts
+
+  notification_settings = models.JSONField(default=dict, blank=True)
 
   avatar = models.ImageField(upload_to=user_directory_path, blank=True)
   bio = models.TextField(blank=True)

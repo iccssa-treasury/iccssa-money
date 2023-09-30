@@ -7,11 +7,12 @@ import BaseLayout from './pages/components/BaseLayout.vue';
 import SignUpModal from './pages/components/SignUpModal.vue';
 import LogInModal from './pages/components/LogInModal.vue';
 import SessionModal from './pages/components/SessionModal.vue';
+import SettingsModal from './pages/components/SettingsModal.vue';
 import defaultAvatar from '@/assets/default-avatar.png';
 
 // See: https://stackoverflow.com/a/66258242
 export default {
-  components: { PopupMessages, BaseLayout, SignUpModal, LogInModal, SessionModal },
+  components: { PopupMessages, BaseLayout, SignUpModal, LogInModal, SessionModal, SettingsModal },
   setup() {
     return { user };
   },
@@ -21,6 +22,7 @@ export default {
       signUpModalIsActive: false,
       logInModalIsActive: false,
       sessionModalIsActive: false,
+      settingsModalIsActive: false,
     };
   },
   methods: {
@@ -62,7 +64,7 @@ export default {
         <i class="coins icon" />
         <span>收入记录</span>
       </router-link>
-      <router-link v-if="user?.application_level!<5" to="/applications/" class="item" :class="{ active: currentPathIs('/applications/') }">
+      <router-link v-if="user?.application_level!<4" to="/applications/" class="item" :class="{ active: currentPathIs('/applications/') }">
         <i class="balance scale icon" />
         <span>财务审核</span>
       </router-link>
@@ -77,10 +79,10 @@ export default {
         <i class="user circle icon" />
         <span>Sign up</span>
       </a>
-      <router-link v-if="user" to="/me/notifications/" class="right item">
+      <a v-if="user" @click="settingsModalIsActive = true" class="right item">
         <i class="bell icon" />
         <span>通知</span>
-      </router-link>
+      </a>
       <a v-if="user" @click="sessionModalIsActive = true" class="item">
         <img class="ui bordered avatar image" :src="avatar" :alt="`${user.username}'s avatar`" />
         <span>{{ user.username }}</span>
@@ -96,6 +98,7 @@ export default {
       <sign-up-modal v-model="signUpModalIsActive" />
       <log-in-modal v-model="logInModalIsActive" />
       <session-modal v-model="sessionModalIsActive" />
+      <settings-modal v-model="settingsModalIsActive" />
     </template>
   </base-layout>
   <popup-messages />

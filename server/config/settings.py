@@ -167,6 +167,11 @@ LOGGING = {
       'handlers': ['file'],
       'propagate': True,
     },
+    'main.email': {
+      'level': 'INFO',
+      'handlers': ['file'],
+      'propagate': True,
+    },
   },
   'handlers': {
     'file': {

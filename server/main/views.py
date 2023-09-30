@@ -10,6 +10,7 @@ from rest_framework.parsers import MultiPartParser
 from .serializers import *
 from accounts.models import Privilege
 from .models import Level, Action
+from .email import notify_application_event, notify_income_receipt
 
 logger = logging.getLogger(__name__)
 
@@ -175,6 +176,8 @@ class NewApplicationView(views.APIView):
     })
     serializer.is_valid(raise_exception=True)
     serializer.save()
+    # Email notifications.
+    notify_application_event(serializer.instance, user.application_level)
     return Response(serializer.data, status.HTTP_201_CREATED)
 
 
@@ -263,6 +266,8 @@ class ApplicationEventsView(generics.ListCreateAPIView):
     if action > Action.SUPPORT:
       application.level = result_application_level(user, action)
       application.save()
+    # Email notifications.
+    notify_application_event(serializer.instance, application.level)
     return Response(serializer.data, status.HTTP_201_CREATED)
 
 
@@ -334,6 +339,8 @@ class NewIncomeView(views.APIView):
     })
     serializer.is_valid(raise_exception=True)
     serializer.save()
+    # Email notifications.
+    notify_income_receipt(serializer.instance)
     return Response(serializer.data, status.HTTP_201_CREATED)
 
 
@@ -431,6 +438,8 @@ class IncomeReceiptsView(generics.ListCreateAPIView):
     else:
       income.level = result_income_level(user, action)
     income.save()
+    # Email notifications.
+    notify_income_receipt(serializer.instance)
     return Response(serializer.data, status.HTTP_201_CREATED)
 
 

@@ -88,3 +88,16 @@ class SessionView(views.APIView):
   def delete(self, request: Request) -> Response:
     auth.logout(request)
     return Response(None, status.HTTP_200_OK)
+
+
+class NotificationSettingsView(views.APIView):
+  permission_classes = [permissions.IsAuthenticated]  # Only authenticated users can access this endpoint.
+
+  # Update notification settings.
+  def patch(self, request: Request) -> Response:
+    user = request.user
+    user.notification_settings['application'] = int(request.data.get('application'))
+    user.notification_settings['approval'] = int(request.data.get('approval'))
+    user.notification_settings['income'] = int(request.data.get('income'))
+    user.save()
+    return Response(None, status.HTTP_200_OK)

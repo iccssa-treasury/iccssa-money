@@ -3,9 +3,9 @@
 if [[ "$*" != *"--no-git"* ]]; then
   echo "Updating git repository..."
   cd ~/cssa
-  git stash
+  git reset --hard HEAD
   git pull --rebase
-  git stash pop
+  sed -i '6s#http://localhost:8000/#/#' client/src/api.ts
 fi
 
 echo "Building client..."

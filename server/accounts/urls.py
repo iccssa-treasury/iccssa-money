@@ -6,4 +6,5 @@ urlpatterns = [
   path('users/', views.UsersView.as_view()),  # type: ignore
   path('user/<int:pk>/', views.UserView.as_view()),  # type: ignore
   path('me/', views.SessionView.as_view()),  # type: ignore
+  path('me/notification/settings/', views.NotificationSettingsView.as_view()),  # type: ignore
 ]

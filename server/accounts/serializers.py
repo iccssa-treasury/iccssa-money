@@ -32,6 +32,7 @@ class UserSelfSerializer(serializers.ModelSerializer):
       'email', 'avatar', 'bio',
       'approval_level', 'application_level', 'department',
       'representative', 'date_joined', 'last_login',
+      'notification_settings',
       'admin',
     ]
     read_only_fields = [
@@ -54,6 +55,7 @@ class UserAdminSerializer(serializers.ModelSerializer):
       'email', 'avatar', 'bio',
       'approval_level', 'application_level', 'department',
       'representative', 'date_joined', 'last_login',
+      'notification_settings',
       'admin',
     ]
 
