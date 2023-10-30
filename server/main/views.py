@@ -10,7 +10,7 @@ from rest_framework.parsers import MultiPartParser
 from .serializers import *
 from accounts.models import Privilege
 from .models import Level, Action
-from .email import notify_application_event, notify_income_receipt
+from .mailer import notify_application_event, notify_income_receipt
 
 logger = logging.getLogger(__name__)
 

@@ -18,6 +18,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.environ["CSSA_SECRET_KEY"]
 DEBUG = (os.environ.get('CSSA_DEBUG', '') == '1')
+DEV_PATH = os.environ.get('CSSA_DEV_PATH', '')
 ALLOWED_HOSTS = ['*'] if DEBUG else os.environ.get('CSSA_ALLOWED_HOSTS', '').split()
 
 # Application definition

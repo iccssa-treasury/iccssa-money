@@ -2,7 +2,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.core.validators import MinLengthValidator
-from accounts.models import User, Department
+from accounts.models import User, Department, user_directory_path
 
 # Application category
 class Category(models.IntegerChoices):
@@ -90,9 +90,6 @@ class Application(models.Model):
     def __str__(self):
         return f'[{self.get_department_display()}] - {self.user} {self.get_category_display()} \
             {display_amount(self.get_currency_display(), self.amount)}'
-
-def user_directory_path(self: models.Model, filename: str) -> str:
-    return 'accounts/user_{0}/{1}'.format(self.user.pk, filename)
 
 def fileSizeValidator(file):
     if file.size > 10 * 1024 * 1024:

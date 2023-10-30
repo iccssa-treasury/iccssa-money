@@ -10,7 +10,6 @@ from base64 import urlsafe_b64decode, urlsafe_b64encode
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from email.mime.image import MIMEImage
-from email.mime.audio import MIMEAudio
 from email.mime.base import MIMEBase
 from mimetypes import guess_type as guess_mime_type
 
@@ -19,6 +18,7 @@ import threading
 from accounts.models import User, Privilege, Notification
 from .models import Event, Receipt, Action, display_amount
 from django.db.models import Q
+from config import settings
 
 # See https://thepythoncode.com/article/use-gmail-api-in-python?utm_content=cmp-true
 class MailerService:
@@ -65,10 +65,11 @@ class Mailer(threading.Thread):
       logger.info(f'Sending mail to {mail.destinations}')
       logger.info(f'Subject: {mail.obj}')
       logger.info(f'Body: {mail.body}')
-      self.service.users().messages().send(
-        userId="me",
-        body=self.build_message(mail.destinations, mail.obj, mail.body, mail.attachments)
-      ).execute()
+      if not settings.DEBUG:
+        self.service.users().messages().send(
+          userId="me",
+          body=self.build_message(mail.destinations, mail.obj, mail.body, mail.attachments)
+        ).execute()
   
   def build_message(self, destinations, obj, body, attachments=[]):
     if not attachments: # no attachments given
@@ -100,10 +101,6 @@ class Mailer(threading.Thread):
     elif main_type == 'image':
         fp = open(filename, 'rb')
         msg = MIMEImage(fp.read(), _subtype=sub_type)
-        fp.close()
-    elif main_type == 'audio':
-        fp = open(filename, 'rb')
-        msg = MIMEAudio(fp.read(), _subtype=sub_type)
         fp.close()
     else:
         fp = open(filename, 'rb')
@@ -154,7 +151,6 @@ class Mail:
     return f'{name}{reason}{suffix}\n{url}'
 
 logger = logging.getLogger(__name__)
-service = MailerService().service
 
 def notify_application_event(event: Event, application_level: int):
   critical = event.action == Action.REJECT or event.action == Action.COMPLETE
@@ -177,7 +173,7 @@ def notify_application_event(event: Event, application_level: int):
   for watcher in watchers:
     if watcher.notification_settings.get('approval') == Notification.ALL and watcher not in notified:
       notified.add(watcher.email)
-  Mailer(service, [Mail(destinations=notified, event=event)]).start()
+  Mailer(MailerService().service, [Mail(destinations=notified, event=event)]).start()
 
 def notify_income_receipt(receipt: Receipt):
   critical = receipt.action == Action.CREATE or receipt.action == Action.COMPLETE
@@ -188,4 +184,4 @@ def notify_income_receipt(receipt: Receipt):
     level = representative.notification_settings.get('income')
     if level == Notification.ALL or (level == Notification.PARTIAL and critical):
       notified.add(representative.email)
-  Mailer(service, [Mail(destinations=notified, receipt=receipt)]).start()
+  Mailer(MailerService().service, [Mail(destinations=notified, receipt=receipt)]).start()

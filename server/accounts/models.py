@@ -6,6 +6,7 @@ from django.contrib.auth.hashers import make_password
 from django.forms import ValidationError
 from django.http import HttpRequest
 from django.utils import timezone
+from config import settings
 
 
 # Extending from Django's built-in user model.
@@ -34,7 +35,7 @@ def username_validator(username: str) -> None:
 
 
 def user_directory_path(self: models.Model, filename: str) -> str:
-  return 'accounts/user_{0}/{1}'.format(self.pk, filename)
+  return '{2}accounts/user_{0}/{1}'.format(self.pk, filename, settings.DEV_PATH)
 
 
 # User privilege level for application and approval
