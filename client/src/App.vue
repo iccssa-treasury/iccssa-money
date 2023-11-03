@@ -64,6 +64,10 @@ export default {
         <i class="coins icon" />
         <span>收入记录</span>
       </router-link>
+      <router-link v-if="user?.application_level!<4" to="/budgets/" class="item" :class="{ active: currentPathIs('/budgets/') }">
+        <i class="piggy bank icon" />
+        <span>活动预算</span>
+      </router-link>
       <router-link v-if="user?.application_level!<4" to="/applications/" class="item" :class="{ active: currentPathIs('/applications/') }">
         <i class="balance scale icon" />
         <span>财务审核</span>

@@ -12,7 +12,7 @@ export const api = axios.create({
 
 // API schemas.
 
-interface Json {
+export interface Json {
   [key: string]: any;
 }
 
@@ -27,6 +27,7 @@ export interface User {
   application_level: number;
   department: number;
   representative: boolean;
+  budgeteer: boolean;
   notification_settings: Json;
   avatar: string;
   bio: string;
@@ -53,11 +54,28 @@ export interface Destination {
   star: boolean;
 }
 
+export interface Budget {
+  pk: number;
+  user: number;
+  department: number;
+  level: number;
+  reason: string;
+  description: string;
+  file: string;
+  amount: number;
+  spent: number;
+  spent_actual: Json;
+  profit: number;
+  received: number;
+  received_actual: Json;
+}
+
 export interface Application {
   pk: number;
   user: number;
   department: number;
   category: number;
+  budget: number;
   platform: number;
   name: string;
   sort_code: string;
@@ -85,6 +103,8 @@ export interface Income {
   pk: number;
   user: number;
   department: number;
+  category: number;
+  budget: number;
   currency: number;
   amount: number;
   reason: string;
@@ -113,4 +133,11 @@ export function destination_display(destination: Destination | Application): str
     default: // ALIPAY, WECHAT
       return `${destination.name} - ${destination.card_number}`;
   }
+}
+
+export function filename_display(file: string): string {
+  if (file === null || file === undefined) return '';
+  const filename = file.substring(file.lastIndexOf('/') + 1);
+  const query = filename.indexOf('?');
+  return decodeURIComponent(query === -1 ? filename : filename.substring(0, query));
 }

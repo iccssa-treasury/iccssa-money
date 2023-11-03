@@ -11,8 +11,3 @@ venv/
 
 # Nginx
 nginx.conf
-
-# Google
-credentials.json
-token.pickle
-*.ipynb

@@ -1,3 +1,5 @@
+import type { Json } from './api';
+
 export type Choice = { value: number; text: string }
 export function choices(e: any): Choice[] {
   return Object.keys(e).filter(i => isNaN(Number(i))).map(k => ({ value: e[k], text: k }));
@@ -29,6 +31,13 @@ export enum Category {
   报销 = 0,
   付款 = 1,
   预支 = 2,
+}
+
+export enum Source {
+  合同 = 0,
+  活动 = 1,
+  换汇 = 2,
+  退款 = 3,
 }
 
 export enum Level {
@@ -87,4 +96,11 @@ export function currency_symbol(currency: Currency) {
 
 export function display_amount(currency: Currency, amount: number) {
   return currency_symbol(currency) + (amount/100).toFixed(2);
+}
+
+export function received_amount(received: Json, default_currency: Currency) {
+  const amounts = [0,1].map(i => received[Currency[i]]);
+  const displays = [0,1].map(i => display_amount(i, amounts[i]));
+  const display = displays.filter((_, i) => amounts[i])
+  return display.length ? display.join(' + ') : displays[default_currency];
 }

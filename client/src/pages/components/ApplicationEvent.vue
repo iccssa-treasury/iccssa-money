@@ -1,9 +1,10 @@
 <script lang="ts">
 import { friendlyDate } from '@/dates';
+import { filename_display } from '@/api';
 
 export default {
   setup() {
-    return { friendlyDate };
+    return { friendlyDate, filename_display };
   },
   props: {
     time: { type: String, required: true },
@@ -21,12 +22,6 @@ export default {
   computed: {
     date() {
       return friendlyDate(new Date(this.time));
-    },
-    filename() {
-      if (this.file === null || this.file === undefined) return '';
-      const filename = this.file.substring(this.file.lastIndexOf('/') + 1);
-      const query = filename.indexOf('?');
-      return decodeURIComponent(query === -1 ? filename : filename.substring(0, query));
     },
     title() {
       if (this.category) {
@@ -67,7 +62,7 @@ export default {
       </div>
       <div class="text">{{ contents }}</div>
       <a class="ui basic label" v-if="file" :href="file">
-        <i class="file icon"></i>{{ filename }}
+        <i class="file icon"></i>{{ filename_display(file) }}
       </a>
     </div>
   </div>

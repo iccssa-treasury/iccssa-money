@@ -33,11 +33,31 @@ class DestinationSerializer(serializers.ModelSerializer):
     DestinationValidator()(attrs)
     return attrs
 
+class BudgetBasicSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = Budget
+    fields = [
+      'pk', 'user', 'department', 'level', 'reason', 'amount', 'spent',
+    ]
+    read_only_fields = [
+      'pk', 'user', 'department', 'level', 'reason', 'amount', 'spent',
+    ]
+
+class BudgetManagerSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = Budget
+    fields = [
+      'pk', 'user', 'department', 'level', 'reason', 'description',
+      'file', 'amount', 'profit', 'spent', 'spent_actual',
+      'received', 'received_actual',
+    ]
+    read_only_fields = ['pk']
+
 class ApplicationSerializer(serializers.ModelSerializer):
   class Meta:
     model = Application
     fields = [
-      'pk', 'user', 'department', 'category', 'platform', 
+      'pk', 'user', 'department', 'category', 'budget', 'platform', 
       'name', 'sort_code', 'account_number', 'business',
       'card_number', 'bank_name', 'currency', 
       'amount', 'reason', 'level',
@@ -61,8 +81,8 @@ class IncomeSerializer(serializers.ModelSerializer):
   class Meta:
     model = Income
     fields = [
-      'pk', 'user', 'department',
-      'currency', 'amount', 'reason',
+      'pk', 'user', 'department', 'category', 
+      'budget', 'currency', 'amount', 'reason',
       'received', 'level',
     ]
     read_only_fields = ['pk']

@@ -1,10 +1,10 @@
 <script lang="ts">
 import axios from 'axios';
-import { api, type User } from '@/api';
+import { api, type User, type Budget } from '@/api';
 import { messageErrors, user } from '@/state';
 import { FormErrors } from '@/errors';
 import { IncomeFields } from '@/forms';
-import { choices, Department, Currency } from '@/enums';
+import { choices, Department, Currency, Source } from '@/enums';
 
 import FileUpload from './components/FileUpload.vue';
 
@@ -13,7 +13,7 @@ export default {
   setup() {
     return {
       user,
-      choices, Department, Currency
+      choices, Department, Currency, Source,
     };
   },
   data() {
@@ -21,8 +21,11 @@ export default {
       success: false,
       waiting: false,
       fields: new IncomeFields(),
+      budgets: new Array<Budget>(),
       errors: new FormErrors<IncomeFields>({
+        category: [],
         department: [],
+        budget: [],
         currency: [],
         amount: [],
         reason: [],
@@ -36,7 +39,9 @@ export default {
       const data = (await api.get('accounts/me/')).data;
       if (data) user.value = data as User;
       // console.log(data);
+      this.budgets = (await api.get('main/budgets/')).data as Budget[];
       this.fields.department = data.department;
+      this.fields.budget = this.filtered_budgets[0].value;
     } catch (e) {
       messageErrors(e);
     }
@@ -49,6 +54,11 @@ export default {
       set(value: number) {
         this.fields.amount = Math.round(value * 100);
       },
+    },
+    filtered_budgets() {
+      return this.budgets
+        .filter((budget) => budget.department === this.fields.department)
+        .map((budget) => ({ value: budget.pk, text: budget.reason }));
     }
   },
   methods: {
@@ -64,6 +74,7 @@ export default {
         // manual clear
         this.fields = new IncomeFields();
         this.fields.department = user.value.department;
+        this.fields.budget = this.filtered_budgets[0].value;
         this.success = true;
       } catch (e) {
         if (axios.isAxiosError(e)) this.errors.decode(e);
@@ -81,14 +92,28 @@ export default {
     <form class="ui form">
       <h4 class="ui dividing header">基础信息</h4>
       <div class="fields">
+        <div class="three wide field" :class="{ error: errors.fields.category.length > 0 }">
+          <label>财务类目</label>
+          <select class="ui selection dropdown" v-model="fields.category">
+            <option v-for="choice in choices(Source)" :value="choice.value">{{ choice.text }}</option>
+          </select>
+        </div>
         <div class="ten wide field" :class="{ error: errors.fields.reason.length > 0 }">
           <label>合同标题</label>
           <input placeholder="实体名称..." v-model="fields.reason" @input="errors.fields.reason.length = 0" />
         </div>
+      </div>
+      <div class="fields">
         <div class="three wide field" :class="{ error: errors.fields.department.length > 0 }">
           <label>所属部门</label>
           <select class="ui selection dropdown" v-model="fields.department">
             <option v-for="choice in choices(Department)" :value="choice.value">{{ choice.text }}</option>
+          </select>
+        </div>
+        <div class="seven wide field" :class="{ error: errors.fields.budget.length > 0 }">
+          <label>预算方案</label>
+          <select class="ui selection dropdown" v-model="fields.budget">
+            <option v-for="choice in filtered_budgets" :value="choice.value">{{ choice.text }}</option>
           </select>
         </div>
       </div>

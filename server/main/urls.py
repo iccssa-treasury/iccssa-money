@@ -6,6 +6,10 @@ urlpatterns = [
   path('destinations/', views.DestinationsView.as_view()),  # type: ignore
   path('me/destinations/', views.UserDestinationsView.as_view()),  # type: ignore
   path('destination/<int:pk>/', views.DestinationView.as_view()),  # type: ignore
+  path('budgets/', views.BudgetsView.as_view()),  # type: ignore
+  path('budget/<int:pk>/', views.BudgetView.as_view()),  # type: ignore
+  path('budget/<int:pk>/applications/', views.BudgetApplicationsView.as_view()),  # type: ignore
+  path('budget/<int:pk>/incomes/', views.BudgetIncomesView.as_view()),  # type: ignore
   path('applications/', views.ApplicationsView.as_view()),  # type: ignore
   path('me/applications/', views.UserApplicationsView.as_view()),  # type: ignore
   path('applications/new/', views.NewApplicationView.as_view()),  # type: ignore'

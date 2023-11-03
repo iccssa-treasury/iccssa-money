@@ -3,6 +3,7 @@ from .models import *
 
 # Register your models here.
 admin.site.register(Destination)
+admin.site.register(Budget)
 admin.site.register(Application)
 admin.site.register(Event)
 admin.site.register(Income)

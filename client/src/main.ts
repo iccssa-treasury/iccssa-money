@@ -14,6 +14,8 @@ import ApplicationPage from './pages/ApplicationPage.vue';
 import NewIncomePage from './pages/NewIncomePage.vue';
 import IncomesPage from './pages/IncomesPage.vue';
 import IncomePage from './pages/IncomePage.vue';
+import BudgetsPage from './pages/BudgetsPage.vue';
+import BudgetPage from './pages/BudgetPage.vue';
 import NotFoundPage from './pages/NotFoundPage.vue';
 
 // URL declarations.
@@ -27,6 +29,8 @@ const router = createRouter({
     { path: '/incomes/new/', component: NewIncomePage },
     { path: '/incomes/', component: IncomesPage },
     { path: '/income/:pk/', component: IncomePage, props: true },
+    { path: '/budgets/', component: BudgetsPage },
+    { path: '/budget/:pk/', component: BudgetPage, props: true },
     // // See: https://router.vuejs.org/guide/essentials/dynamic-matching.html#catch-all-404-not-found-route
     { path: '/:pathMatch(.*)*', component: NotFoundPage },
   ],

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { api, type User, type Event, type Application, destination_display } from '@/api';
+import { api, type User, type Event, type Application, type Budget, destination_display } from '@/api';
 import { messageErrors, user } from '@/state';
 import { EventFields } from '@/forms';
 import { Action, Level, Category, Department, Platform, display_amount, level_status, level_icon } from '@/enums';
@@ -26,6 +26,7 @@ export default {
       waiting: false,
       application: null as Application | null,
       events: new Array<Event>(),
+      budget: null as Budget | null,
       users: new Map<number, User>(),
       contents: '',
       file: null as null | Blob,
@@ -38,6 +39,8 @@ export default {
       // console.log(data);
       this.application = (await api.get(`main/application/${this.pk}/`)).data as Application;
       this.events = (await api.get(`main/application/${this.pk}/events/`)).data as Event[];
+      if (this.application.budget !== null)
+        this.budget = (await api.get(`main/budget/${this.application.budget}/`)).data as Budget;
       for (const user of (await api.get('accounts/users/')).data as User[]) {
         this.users.set(user.pk, user);
       }
@@ -74,6 +77,7 @@ export default {
         // manual update
         this.application = (await api.get(`main/application/${this.pk}/`)).data as Application;
         this.events = (await api.get(`main/application/${this.pk}/events/`)).data as Event[];
+        this.budget = (await api.get(`main/budget/${this.application.budget}/`)).data as Budget;
         this.contents = '';
         this.file = null;
       } catch (e) {
@@ -103,6 +107,10 @@ export default {
         <tr>
           <td class="three wide">所属部门</td>
           <td>{{ Department[application.department] }}</td>
+        </tr>
+        <tr>
+          <td>预算方案</td>
+          <td>{{ budget?.reason ?? "[未分配]" }}</td>
         </tr>
         <tr>
           <td>申请金额</td>

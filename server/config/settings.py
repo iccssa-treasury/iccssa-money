@@ -20,6 +20,7 @@ SECRET_KEY = os.environ["CSSA_SECRET_KEY"]
 DEBUG = (os.environ.get('CSSA_DEBUG', '') == '1')
 DEV_PATH = os.environ.get('CSSA_DEV_PATH', '')
 ALLOWED_HOSTS = ['*'] if DEBUG else os.environ.get('CSSA_ALLOWED_HOSTS', '').split()
+FX_API_KEY = os.environ.get('CSSA_FX_API_KEY', '')
 
 # Application definition
 INSTALLED_APPS = [

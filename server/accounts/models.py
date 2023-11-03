@@ -77,6 +77,7 @@ class User(AbstractBaseUser):
   application_level = models.IntegerField(choices=Privilege.choices, default=Privilege.VISITOR)
   department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
   representative = models.BooleanField(default=False) # Whether the user has the right to sign contracts
+  budgeteer = models.BooleanField(default=False) # Whether the user has the right to manage budgets
 
   notification_settings = models.JSONField(default=dict, blank=True)
 

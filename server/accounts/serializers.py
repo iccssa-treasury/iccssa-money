@@ -31,14 +31,14 @@ class UserSelfSerializer(serializers.ModelSerializer):
       'pk', 'username', 'password', 'name', 
       'email', 'avatar', 'bio',
       'approval_level', 'application_level', 'department',
-      'representative', 'date_joined', 'last_login',
+      'representative', 'budgeteer', 'date_joined', 'last_login',
       'notification_settings',
       'admin',
     ]
     read_only_fields = [
       'pk', 
       'approval_level', 'application_level', 'department',
-      'representative', 'date_joined', 'last_login',
+      'representative', 'budgeteer', 'date_joined', 'last_login',
       'admin',
     ]
     extra_kwargs = {
@@ -54,7 +54,7 @@ class UserAdminSerializer(serializers.ModelSerializer):
       'pk', 'username', 'password', 'name', 
       'email', 'avatar', 'bio',
       'approval_level', 'application_level', 'department',
-      'representative', 'date_joined', 'last_login',
+      'representative', 'budgeteer', 'date_joined', 'last_login',
       'notification_settings',
       'admin',
     ]

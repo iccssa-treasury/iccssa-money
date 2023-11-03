@@ -1,4 +1,3 @@
-from datetime import datetime
 import logging
 from django.shortcuts import get_object_or_404
 from django.db import transaction
@@ -11,6 +10,7 @@ from .serializers import *
 from accounts.models import Privilege
 from .models import Level, Action
 from .mailer import notify_application_event, notify_income_receipt
+from .fx import exchange
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +94,64 @@ class DestinationView(views.APIView):
     return Response(DestinationSerializer(destination).data, status.HTTP_200_OK)
 
 
+def has_access_to_budget(user: User, budget: Budget) -> bool:
+  # Budgeteers can access all budgets.
+  if user.budgeteer:
+    return True
+  # Commitees can access all budgets from their department.
+  if user.approval_level <= Privilege.COMMITTEE:
+    return user.department == budget.department or user == budget.user
+  # Members cannot access budgets.
+  return False
+
+
+class BudgetsView(views.APIView):
+  permission_classes = [IsUser]
+
+  # Retrieve all budgets that the current user can access.
+  def get(self, request: Request) -> Response:
+    queryset = Budget.objects.all().order_by('department')
+    return Response(BudgetBasicSerializer(queryset, many=True).data, status.HTTP_200_OK)
+
+
+class BudgetView(views.APIView):
+  permission_classes = [IsUser]
+
+  # Retrieve a budget for current user.
+  def get(self, request: Request, pk: int) -> Response:
+    user = request.user
+    budget = get_object_or_404(Budget, pk=pk)
+    if not has_access_to_budget(user, budget):
+      self.permission_denied(request)
+    return Response(BudgetManagerSerializer(budget).data, status.HTTP_200_OK)
+  
+
+class BudgetApplicationsView(views.APIView):
+  permission_classes = [IsUser]
+
+  # Retrieve all applications for given budget.
+  def get(self, request: Request, pk: int) -> Response:
+    budget = get_object_or_404(Budget, pk=pk)
+    user = request.user
+    if not has_access_to_budget(user, budget):
+      return Response([], status.HTTP_200_OK)
+    queryset = Application.objects.filter(budget=budget).order_by('-level')
+    return Response(ApplicationSerializer(queryset, many=True).data, status.HTTP_200_OK)
+
+
+class BudgetIncomesView(views.APIView):
+  permission_classes = [IsUser]
+
+  # Retrieve all incomes for given budget.
+  def get(self, request: Request, pk: int) -> Response:
+    budget = get_object_or_404(Budget, pk=pk)
+    user = request.user
+    if not has_access_to_budget(user, budget):
+      return Response([], status.HTTP_200_OK)
+    queryset = Income.objects.filter(budget=budget).order_by('-level')
+    return Response(IncomeSerializer(queryset, many=True).data, status.HTTP_200_OK)
+
+
 def has_access_to_application(user: User, application: Application) -> bool:
   # if not isinstance(user, User):
   #   return False
@@ -102,7 +160,7 @@ def has_access_to_application(user: User, application: Application) -> bool:
     return True
   # Commitees can access all applications from their department.
   if user.approval_level == Privilege.COMMITTEE:
-    return user.department == application.department or user == application.user
+    return user.department == application.user.department or user.department == application.department
   # Members can only access their own applications.
   return user == application.user
 
@@ -131,10 +189,23 @@ class UserApplicationsView(views.APIView):
 def can_post_application(user: User, department: int) -> bool:
   # if not isinstance(user, User):
   #   return False
-  if user.application_level <= Privilege.COMMITTEE:
-    return True
-  # Members can only submit applications for their own department.
-  return user.department == department
+  # Only members can post applications.
+  return user.application_level <= Privilege.MEMBER
+
+
+def update_application_budget(application: Application, action: int) -> None:
+  budget = application.budget
+  if budget:
+    currency = Currency.labels[application.currency]
+    amount = application.amount
+    converted = exchange(amount, currency)
+    if action == Action.CREATE:
+      budget.spent += converted
+      budget.spent_actual[currency] += amount
+    elif action == Action.REJECT or action == Action.CANCEL:
+      budget.spent -= converted
+      budget.spent_actual[currency] -= amount
+    budget.save()
 
 
 class NewApplicationView(views.APIView):
@@ -152,6 +223,7 @@ class NewApplicationView(views.APIView):
       'user': user.pk,
       'department': department,
       'category': request.data.get('category'),
+      'budget': request.data.get('budget'),
       'platform': request.data.get('platform'),
       'name': request.data.get('name'),
       'sort_code': request.data.get('sort_code'),
@@ -176,6 +248,8 @@ class NewApplicationView(views.APIView):
     })
     serializer.is_valid(raise_exception=True)
     serializer.save()
+    # Update budget.
+    update_application_budget(application, Action.CREATE)
     # Email notifications.
     notify_application_event(serializer.instance, user.application_level)
     return Response(serializer.data, status.HTTP_201_CREATED)
@@ -266,6 +340,8 @@ class ApplicationEventsView(generics.ListCreateAPIView):
     if action > Action.SUPPORT:
       application.level = result_application_level(user, action)
       application.save()
+    # Update budget.
+    update_application_budget(application, action)
     # Email notifications.
     notify_application_event(serializer.instance, application.level)
     return Response(serializer.data, status.HTTP_201_CREATED)
@@ -308,6 +384,17 @@ def can_post_income(user: User) -> bool:
   return user.representative
 
 
+def update_income_budget(income: Income, currency: int, amount: int, action: int) -> None:
+  budget = income.budget
+  if budget:
+    currency = Currency.labels[currency]
+    converted = exchange(amount, currency)  
+    if action == Action.SUPPORT and amount > 0:
+      budget.received += converted
+      budget.received_actual[currency] += amount
+    budget.save()
+
+
 class NewIncomeView(views.APIView):
   parser_classes = [MultiPartParser]
   permission_classes = [IsUser]
@@ -321,6 +408,8 @@ class NewIncomeView(views.APIView):
     serializer = IncomeSerializer(data={
       'user': user.pk,
       'department': request.data.get('department'),
+      'category': request.data.get('category'),
+      'budget': request.data.get('budget'),
       'currency': request.data.get('currency'),
       'amount': request.data.get('amount'),
       'reason': request.data.get('reason'),
@@ -339,6 +428,8 @@ class NewIncomeView(views.APIView):
     })
     serializer.is_valid(raise_exception=True)
     serializer.save()
+    # Update budget (does not do anything for now).
+    update_income_budget(income, income.currency, income.amount, Action.CREATE)
     # Email notifications.
     notify_income_receipt(serializer.instance)
     return Response(serializer.data, status.HTTP_201_CREATED)
@@ -378,8 +469,8 @@ def can_post_receipt(user: User, income: Income, action: int, amount: int) -> bo
     # Not yet implemented.
     return False
   elif action == Action.CREATE or action == Action.CANCEL:
-    # User can only create or cancel their own incomplete incomes.
-    return user == income.user and income.level > Level.COMPLETED
+    # User can only create or cancel their own incomes without any receipts.
+    return user == income.user and all(amount == 0 for amount in income.received.values())
   elif action == Action.COMPLETE:
     # Only admins can receive full payments.
     return user.approval_level == Privilege.AUDIT and income.level == Level.ACCEPTED
@@ -438,6 +529,8 @@ class IncomeReceiptsView(generics.ListCreateAPIView):
     else:
       income.level = result_income_level(user, action)
     income.save()
+    # Update budget.
+    update_income_budget(income, currency, amount, action)
     # Email notifications.
     notify_income_receipt(serializer.instance)
     return Response(serializer.data, status.HTTP_201_CREATED)

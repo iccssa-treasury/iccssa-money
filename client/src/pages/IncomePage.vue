@@ -1,8 +1,8 @@
 <script lang="ts">
-import { api, type User, type Receipt, type Income } from '@/api';
+import { api, type User, type Receipt, type Income, type Budget } from '@/api';
 import { messageErrors, user } from '@/state';
 import { ReceiptFields } from '@/forms';
-import { Action, Currency, Level, Department, currency_symbol, display_amount, level_status, level_icon } from '@/enums';
+import { Action, Currency, Level, Department, currency_symbol, display_amount, received_amount, level_status, level_icon } from '@/enums';
 import defaultAvatar from '@/assets/default-avatar.png';
 
 import ApplicationEvent from './components/ApplicationEvent.vue';
@@ -14,7 +14,7 @@ export default {
     return {
       user,
       Action, Currency, Level, Department, 
-      currency_symbol, display_amount, level_status, level_icon
+      currency_symbol, display_amount, received_amount, level_status, level_icon
     };
   },
   props: {
@@ -25,6 +25,7 @@ export default {
       waiting: false,
       income: null as Income | null,
       receipts: new Array<Receipt>(),
+      budget: null as Budget | null,
       users: new Map<number, User>(),
       currency: 0,
       amount: 0,
@@ -40,6 +41,8 @@ export default {
       this.income = (await api.get(`main/income/${this.pk}/`)).data as Income;
       this.currency = this.income.currency;
       this.receipts = (await api.get(`main/income/${this.pk}/receipts/`)).data as Receipt[];
+      if (this.income.budget !== null)
+        this.budget = (await api.get(`main/budget/${this.income.budget}/`)).data as Budget;
       for (const user of (await api.get('accounts/users/')).data as User[]) {
         this.users.set(user.pk, user);
       }
@@ -48,12 +51,6 @@ export default {
     }
   },
   computed: {
-    received_amount() {
-      const amounts = [0,1].map(i => this.income?.received[Currency[i]]);
-      const displays = [0,1].map(i => display_amount(i, amounts[i]));
-      const display = displays.filter((_, i) => amounts[i])
-      return display.length ? display.join(' + ') : displays[this.income?.currency!];
-    },
     can_cancel() {
       if (user.value === undefined || this.income === null) return false;
       return user.value.pk === this.income.user && this.income.level > 0;
@@ -100,6 +97,7 @@ export default {
         // manual update
         this.income = (await api.get(`main/income/${this.pk}/`)).data as Income;
         this.receipts = (await api.get(`main/income/${this.pk}/receipts/`)).data as Receipt[];
+        this.budget = (await api.get(`main/budget/${this.income.budget}/`)).data as Budget;
         this.amount = 0;
         this.contents = '';
         this.file = null;
@@ -141,12 +139,16 @@ export default {
           <td>{{ users.get(income.user)?.name }}</td>
         </tr>
         <tr>
+          <td>预算方案</td>
+          <td>{{ budget?.reason ?? "[未分配]" }}</td>
+        </tr>
+        <tr>
           <td>应收金额</td>
           <td>{{ display_amount(income.currency, income.amount) }}</td>
         </tr>
         <tr>
           <td>实收金额</td>
-          <td>{{ received_amount }}</td>
+          <td>{{ received_amount(income.received, income.currency) }}</td>
         </tr>
         <tr>
           <td>当前状态</td>

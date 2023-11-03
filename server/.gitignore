@@ -15,3 +15,11 @@ db.sqlite3*
 # Local static and media file folders for debugging:
 static_root/
 media_root/
+
+# Google
+credentials.json
+token.pickle
+*.ipynb
+
+# Foreign API responses
+*.json
