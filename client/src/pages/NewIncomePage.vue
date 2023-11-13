@@ -6,10 +6,10 @@ import { FormErrors } from '@/errors';
 import { IncomeFields } from '@/forms';
 import { choices, Department, Currency, Source } from '@/enums';
 
-import FileUpload from './components/FileUpload.vue';
+import FilesUpload from './components/FilesUpload.vue';
 
 export default {
-  components: { FileUpload },
+  components: { FilesUpload },
   setup() {
     return {
       user,
@@ -30,7 +30,7 @@ export default {
         amount: [],
         reason: [],
         contents: [],
-        file: [],
+        files: [],
       }),
     };
   },
@@ -137,7 +137,7 @@ export default {
       </div>
       <div class="field">
         <label>附件</label>
-        <file-upload v-model="fields.file" />
+        <files-upload v-model="fields.files" />
       </div>
       <button class="ui purple button" :class="{ disabled: waiting, loading: waiting }" @click.prevent="submit">
         上传合同

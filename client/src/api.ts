@@ -40,6 +40,13 @@ export interface Credential {
   password: string;
 }
 
+export interface File {
+  pk: number;
+  user: number;
+  filename: string;
+  file: string;
+}
+
 export interface Destination {
   pk: number;
   user: number;
@@ -61,7 +68,7 @@ export interface Budget {
   level: number;
   reason: string;
   description: string;
-  file: string;
+  plan: number;
   amount: number;
   spent: number;
   spent_actual: Json;
@@ -96,7 +103,7 @@ export interface Event {
   timestamp: string;
   action: number;
   contents: string;
-  file: string;
+  files: Array<number>;
 }
 
 export interface Income {
@@ -121,7 +128,7 @@ export interface Receipt {
   currency: number;
   amount: number;
   contents: string;
-  file: string;
+  files: Array<number>;
 }
 
 export function destination_display(destination: Destination | Application): string {
@@ -135,9 +142,18 @@ export function destination_display(destination: Destination | Application): str
   }
 }
 
-export function filename_display(file: string): string {
+export function file_href(file: File): string {
   if (file === null || file === undefined) return '';
-  const filename = file.substring(file.lastIndexOf('/') + 1);
-  const query = filename.indexOf('?');
-  return decodeURIComponent(query === -1 ? filename : filename.substring(0, query));
+  return file.file;
+}
+
+export function filename_display(file: File): string {
+  if (file === null || file === undefined) return '';
+  if (file.filename === '' || file.filename === null || file.filename === undefined) {
+    const filename = file.file.substring(file.file.lastIndexOf('/') + 1);
+    const query = filename.indexOf('?');
+    return decodeURIComponent(query === -1 ? filename : filename.substring(0, query));
+  } else {
+    return file.filename;
+  }
 }

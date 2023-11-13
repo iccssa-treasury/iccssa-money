@@ -3,6 +3,12 @@ from rest_framework.serializers import ValidationError
 from .models import *
 
 
+class FileSerializer(serializers.ModelSerializer):
+  class Meta:
+    model = File
+    fields = ['pk', 'user', 'file', 'filename']
+    read_only_fields = ['pk']
+
 class DestinationValidator:
   def __call__(self, attrs):
     platform = attrs['platform']
@@ -48,7 +54,7 @@ class BudgetManagerSerializer(serializers.ModelSerializer):
     model = Budget
     fields = [
       'pk', 'user', 'department', 'level', 'reason', 'description',
-      'file', 'amount', 'profit', 'spent', 'spent_actual',
+      'plan', 'amount', 'profit', 'spent', 'spent_actual',
       'received', 'received_actual',
     ]
     read_only_fields = ['pk']
@@ -73,7 +79,7 @@ class EventSerializer(serializers.ModelSerializer):
     model = Event
     fields = [
       'pk', 'user', 'application', 'timestamp',
-      'action', 'contents', 'file',
+      'action', 'contents', 'files',
     ]
     read_only_fields = ['pk', 'timestamp']
 
@@ -93,6 +99,6 @@ class ReceiptSerializer(serializers.ModelSerializer):
     fields = [
       'pk', 'user', 'income', 'timestamp',
       'currency', 'amount', 
-      'action', 'contents', 'file',
+      'action', 'contents', 'files',
     ]
     read_only_fields = ['pk', 'timestamp']

@@ -2,7 +2,8 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import FileExtensionValidator
 from django.core.validators import MinLengthValidator
-from accounts.models import User, Department, user_directory_path
+from accounts.models import User, Department
+from config import settings
 
 # Application category
 class Category(models.IntegerChoices):
@@ -48,8 +49,24 @@ class Platform(models.IntegerChoices):
     ALIPAY = 2, '支付宝'
     WECHAT = 3, '微信'
 
-def display_amount(currency_display: str, amount: int) -> str:
-    return f'{format(amount/100, ".2f")} {currency_display}'
+def user_directory_path(self: models.Model, filename: str) -> str:
+  return '{2}accounts/user_{0}/{1}'.format(self.user.pk, filename, settings.DEV_PATH)
+
+def fileSizeValidator(file):
+    if file.size > 10 * 1024 * 1024:
+        raise ValidationError(f'File size exceeds 10MB limit.')
+
+class File(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    filename = models.CharField(max_length=100, null=True, blank=True)
+    file = models.FileField(upload_to=user_directory_path, validators=[
+        FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']),
+        fileSizeValidator
+    ])
+
+    def __str__(self):
+        filename = self.filename if self.filename else self.file.name
+        return f'{self.user} {filename}'
 
 class Destination(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -77,9 +94,8 @@ class Destination(models.Model):
 def received_json_default():
     return {label: 0 for label in Currency.labels}
 
-def fileSizeValidator(file):
-    if file.size > 10 * 1024 * 1024:
-        raise ValidationError(f'File size exceeds 10MB limit.')
+def display_amount(currency_display: str, amount: int) -> str:
+    return f'{format(amount/100, ".2f")} {currency_display}'
 
 class Budget(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -88,10 +104,7 @@ class Budget(models.Model):
 
     reason = models.TextField()
     description = models.TextField(null=True, blank=True)
-    file = models.FileField(upload_to=user_directory_path, null=True, blank=True, validators=[
-        FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']),
-        fileSizeValidator
-    ])
+    plan = models.ForeignKey(File, on_delete=models.SET_NULL, null=True, blank=True)
     
     amount = models.IntegerField(default=0)
     spent = models.IntegerField(default=0)
@@ -137,15 +150,11 @@ class Event(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     action = models.IntegerField(choices=Action.choices, default=Action.SUPPORT)
     contents = models.TextField(null=True, blank=True)
-    file = models.FileField(upload_to=user_directory_path, null=True, blank=True, validators=[
-        FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']),
-        fileSizeValidator
-    ])
+    files = models.ManyToManyField(File, blank=True)
 
     def __str__(self):
         contents = f': "{self.contents[:20]}"' if self.contents else ''
-        file = f' [{self.file}]' if self.file else ''
-        return f'{self.user} [{self.get_action_display()}] {self.application}{file}{contents}'
+        return f'{self.user} [{self.get_action_display()}] {self.application}{contents}'
 
 class Income(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)
@@ -174,13 +183,9 @@ class Receipt(models.Model):
     currency = models.IntegerField(choices=Currency.choices, default=Currency.GBP)
     amount = models.IntegerField()
     contents = models.TextField(null=True, blank=True)
-    file = models.FileField(upload_to=user_directory_path, null=True, blank=True, validators=[
-        FileExtensionValidator(allowed_extensions=['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx']),
-        fileSizeValidator
-    ])
+    files = models.ManyToManyField(File, blank=True)
 
     def __str__(self):
         contents = f': "{self.contents[:20]}"' if self.contents else ''
-        file = f' [{self.file}]' if self.file else ''
         action = f'+{display_amount(self.get_currency_display(), self.amount)}' if self.amount else self.get_action_display()
-        return f'{self.user} [{action}] {self.income}{file}{contents}'
+        return f'{self.user} [{action}] {self.income}{contents}'

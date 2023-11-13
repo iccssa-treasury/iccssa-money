@@ -1,9 +1,12 @@
 <script lang="ts">
-import { api, type User, type Application, type Income, type Budget, filename_display } from '@/api';
+import { api, type User, type File, type Application, type Income, type Budget, filename_display } from '@/api';
 import { messageErrors, user } from '@/state';
 import { Category, Currency, Level, Department, Source, display_amount, received_amount, level_status, level_icon } from '@/enums';
 
+import FileLink from './components/FileLink.vue';
+
 export default {
+  components: { FileLink },
   setup() {
     return {
       user,
@@ -22,6 +25,7 @@ export default {
       applications: new Array<Application>(),
       incomes: new Array<Income>(),
       users: new Map<number, string>(),
+      plan: null as File | null,
     };
   },
   async created() {
@@ -32,6 +36,8 @@ export default {
       this.budget = (await api.get(`main/budget/${this.pk}/`)).data as Budget;
       this.applications = (await api.get(`main/budget/${this.pk}/applications/`)).data as Application[];
       this.incomes = (await api.get(`main/budget/${this.pk}/incomes/`)).data as Income[];
+      if (this.budget.plan !== null)
+        this.plan = (await api.get(`main/budget/${this.pk}/plan/`)).data as File;
       for (const user of (await api.get('accounts/users/')).data as User[]) {
         this.users.set(user.pk, user.name??'');
       }
@@ -87,9 +93,7 @@ export default {
       </div>
       <div class="sub header">
         {{ budget.description }}
-        <a class="ui basic label" v-if="budget.file" :href="budget.file">
-          <i class="file icon"></i>{{ filename_display(budget.file) }}
-        </a>
+        <file-link v-if="plan" :file="plan" />
       </div>
     </h1>
     <table class="ui definition table">

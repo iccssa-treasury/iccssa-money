@@ -7,6 +7,11 @@ export class UserFields {
   agree: boolean = false;
 }
 
+export class FileFields {
+  filename: string = '';
+  file: null | Blob = null;
+}
+
 export class DestinationFields {
   platform: number = 0;
   name: string = '';
@@ -35,13 +40,13 @@ export class ApplicationFields {
   reason: string = '';
   // Event fields
   contents: string = '';
-  file: null | Blob = null;
+  files: Array<FileFields> = [];
 }
 
 export class EventFields {
   action: number = 0;
   contents: string = '';
-  file: null | Blob = null;
+  files: Array<FileFields> = [];
 }
 
 export class IncomeFields {
@@ -53,7 +58,7 @@ export class IncomeFields {
   reason: string = '';
   // Event fields
   contents: string = '';
-  file: null | Blob = null;
+  files: Array<FileFields> = [];
 }
 
 export class ReceiptFields {
@@ -61,5 +66,5 @@ export class ReceiptFields {
   currency: number = 0;
   amount: number = 0;
   contents: string = '';
-  file: null | Blob = null;
+  files: Array<FileFields> = [];
 }

@@ -1,10 +1,13 @@
 <script lang="ts">
 import { friendlyDate } from '@/dates';
-import { filename_display } from '@/api';
+import { type File } from '@/api';
+
+import FileLink from './FileLink.vue';
 
 export default {
+  components: { FileLink },
   setup() {
-    return { friendlyDate, filename_display };
+    return { friendlyDate };
   },
   props: {
     time: { type: String, required: true },
@@ -12,7 +15,7 @@ export default {
     name: { type: String, required: true },
     action: { type: String, required: true },
     contents: { type: String, required: false },
-    file: { type: String, required: false },
+    files: { type: Array<File>, required: true },
     // For application events
     category: { type: String, required: false },
     // For income receipts
@@ -61,9 +64,7 @@ export default {
         <span class="date">{{ date }}</span>
       </div>
       <div class="text">{{ contents }}</div>
-      <a class="ui basic label" v-if="file" :href="file">
-        <i class="file icon"></i>{{ filename_display(file) }}
-      </a>
+      <file-link v-for="file in files" :file="file" />
     </div>
   </div>
   <div class="ui divider"></div>

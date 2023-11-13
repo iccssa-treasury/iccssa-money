@@ -1,15 +1,15 @@
 <script lang="ts">
-import { api, type User, type Receipt, type Income, type Budget } from '@/api';
+import { api, type User, type File, type Receipt, type Income, type Budget } from '@/api';
 import { messageErrors, user } from '@/state';
 import { ReceiptFields } from '@/forms';
 import { Action, Currency, Level, Department, currency_symbol, display_amount, received_amount, level_status, level_icon } from '@/enums';
 import defaultAvatar from '@/assets/default-avatar.png';
 
 import ApplicationEvent from './components/ApplicationEvent.vue';
-import FileUpload from './components/FileUpload.vue';
+import FilesUpload from './components/FilesUpload.vue';
 
 export default {
-  components: { ApplicationEvent, FileUpload },
+  components: { ApplicationEvent, FilesUpload },
   setup() {
     return {
       user,
@@ -27,10 +27,8 @@ export default {
       receipts: new Array<Receipt>(),
       budget: null as Budget | null,
       users: new Map<number, User>(),
-      currency: 0,
-      amount: 0,
-      contents: '',
-      file: null as null | Blob,
+      receipt_fields: new ReceiptFields(),
+      files: new Map<number, File>(),
     };
   },
   async created() {
@@ -39,13 +37,14 @@ export default {
       if (data) user.value = data as User;
       // console.log(data);
       this.income = (await api.get(`main/income/${this.pk}/`)).data as Income;
-      this.currency = this.income.currency;
+      this.receipt_fields.currency = this.income.currency;
       this.receipts = (await api.get(`main/income/${this.pk}/receipts/`)).data as Receipt[];
+      for (const file of (await api.get(`main/income/${this.pk}/files/`)).data as File[])
+        this.files.set(file.pk, file);
       if (this.income.budget !== null)
         this.budget = (await api.get(`main/budget/${this.income.budget}/`)).data as Budget;
-      for (const user of (await api.get('accounts/users/')).data as User[]) {
+      for (const user of (await api.get('accounts/users/')).data as User[])
         this.users.set(user.pk, user);
-      }
     } catch (e) {
       messageErrors(e);
     }
@@ -61,7 +60,7 @@ export default {
     },
     can_receive_full() {
       return this.has_receive_access && 
-        this.currency === this.income?.currency && 
+        this.receipt_fields.currency === this.income?.currency && 
         this.income?.received[Currency[1 - this.income?.currency]] === 0;
     },
     can_complete() {
@@ -70,14 +69,14 @@ export default {
           this.income?.received[Currency[1 - this.income?.currency]] > 0);
     },
     can_receive() {
-      return this.has_receive_access && this.amount > 0;
+      return this.has_receive_access && this.receipt_fields.amount > 0;
     },
     computed_amount: {
       get() {
-        return this.amount === 0? '': this.amount / 100;
+        return this.receipt_fields.amount === 0? '': this.receipt_fields.amount / 100;
       },
       set(value: number) {
-        this.amount = Math.round(value * 100);
+        this.receipt_fields.amount = Math.round(value * 100);
       },
     },
   },
@@ -85,32 +84,27 @@ export default {
     async receipt(income: string, action: number) {
       try {
         this.waiting = true;
-        const receipt_fields = new ReceiptFields();
-        receipt_fields.action = action;
-        receipt_fields.currency = this.currency;
-        receipt_fields.amount = this.amount;
-        receipt_fields.contents = this.contents;
-        receipt_fields.file = this.file;
-        await api.post(`main/income/${income}/receipts/`, receipt_fields, {
+        this.receipt_fields.action = action;
+        await api.post(`main/income/${income}/receipts/`, this.receipt_fields, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         // manual update
         this.income = (await api.get(`main/income/${this.pk}/`)).data as Income;
         this.receipts = (await api.get(`main/income/${this.pk}/receipts/`)).data as Receipt[];
         this.budget = (await api.get(`main/budget/${this.income.budget}/`)).data as Budget;
-        this.amount = 0;
-        this.contents = '';
-        this.file = null;
+        for (const file of (await api.get(`main/income/${this.pk}/files/`)).data as File[])
+          this.files.set(file.pk, file);
+        this.receipt_fields = new ReceiptFields();
       } catch (e) {
         messageErrors(e);
       }
       this.waiting = false;
     },
     switch_currency() {
-      this.currency = 1 - this.currency;
+      this.receipt_fields.currency = 1 - this.receipt_fields.currency;
     },
     receive_full() {
-      this.amount = this.income?.amount! - this.income?.received[Currency[this.income?.currency]];
+      this.receipt_fields.amount = this.income?.amount! - this.income?.received[Currency[this.income?.currency]];
     },
     avatar(pk: number) {
       return this.users.get(pk)?.avatar ?? defaultAvatar;
@@ -161,7 +155,7 @@ export default {
           <td>确认收款</td>
           <td>
             <div class="ui labeled action input">
-              <label for="amount" class="ui label" @click="switch_currency">{{ currency_symbol(currency) }}</label>
+              <label for="amount" class="ui label" @click="switch_currency">{{ currency_symbol(receipt_fields.currency) }}</label>
               <input placeholder="0.00" v-model="computed_amount" id="amount">
               <button class="ui teal button" @click="receive_full" :disabled="!can_receive_full">
                 <i class="check icon"></i>全额收款
@@ -174,7 +168,7 @@ export default {
           <td>
             <div class="ui form">
               <div class="field">
-                <textarea placeholder="添加评论…" v-model="contents" rows="3"></textarea>
+                <textarea placeholder="添加评论…" v-model="receipt_fields.contents" rows="3"></textarea>
               </div>
             </div>
           </td>
@@ -182,7 +176,7 @@ export default {
         <tr>
           <td>添加附件</td>
           <td>
-            <file-upload v-model="file" />
+            <files-upload v-model="receipt_fields.files" />
           </td>
         </tr>
       </tbody>
@@ -220,7 +214,7 @@ export default {
           :display_amount="display_amount(receipt.currency, receipt.amount)"
           :amount="receipt.amount"
           :contents="receipt.contents"
-          :file="receipt.file"
+          :files="receipt.files.map(pk => files.get(pk)!)"
         />
       </div>
     </div>

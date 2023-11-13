@@ -1,15 +1,15 @@
 <script lang="ts">
-import { api, type User, type Event, type Application, type Budget, destination_display } from '@/api';
+import { api, type User, type File, type Event, type Application, type Budget, destination_display } from '@/api';
 import { messageErrors, user } from '@/state';
 import { EventFields } from '@/forms';
 import { Action, Level, Category, Department, Platform, display_amount, level_status, level_icon } from '@/enums';
 import defaultAvatar from '@/assets/default-avatar.png';
 
 import ApplicationEvent from './components/ApplicationEvent.vue';
-import FileUpload from './components/FileUpload.vue';
+import FilesUpload from './components/FilesUpload.vue';
 
 export default {
-  components: { ApplicationEvent, FileUpload },
+  components: { ApplicationEvent, FilesUpload },
   setup() {
     return {
       user,
@@ -28,8 +28,8 @@ export default {
       events: new Array<Event>(),
       budget: null as Budget | null,
       users: new Map<number, User>(),
-      contents: '',
-      file: null as null | Blob,
+      event_fields: new EventFields(),
+      files: new Map<number, File>(),
     };
   },
   async created() {
@@ -39,11 +39,12 @@ export default {
       // console.log(data);
       this.application = (await api.get(`main/application/${this.pk}/`)).data as Application;
       this.events = (await api.get(`main/application/${this.pk}/events/`)).data as Event[];
+      for (const file of (await api.get(`main/application/${this.pk}/files/`)).data as File[])
+        this.files.set(file.pk, file);
       if (this.application.budget !== null)
         this.budget = (await api.get(`main/budget/${this.application.budget}/`)).data as Budget;
-      for (const user of (await api.get('accounts/users/')).data as User[]) {
+      for (const user of (await api.get('accounts/users/')).data as User[])
         this.users.set(user.pk, user);
-      }
     } catch (e) {
       messageErrors(e);
     }
@@ -67,19 +68,17 @@ export default {
     async event(application: string, action: number) {
       try {
         this.waiting = true;
-        const event_fields = new EventFields();
-        event_fields.action = action;
-        event_fields.contents = this.contents;
-        event_fields.file = this.file;
-        await api.post(`main/application/${application}/events/`, event_fields, {
+        this.event_fields.action = action;
+        await api.post(`main/application/${application}/events/`, this.event_fields, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         // manual update
         this.application = (await api.get(`main/application/${this.pk}/`)).data as Application;
         this.events = (await api.get(`main/application/${this.pk}/events/`)).data as Event[];
         this.budget = (await api.get(`main/budget/${this.application.budget}/`)).data as Budget;
-        this.contents = '';
-        this.file = null;
+        for (const file of (await api.get(`main/application/${this.pk}/files/`)).data as File[])
+          this.files.set(file.pk, file);
+        this.event_fields = new EventFields();
       } catch (e) {
         messageErrors(e);
       }
@@ -143,7 +142,7 @@ export default {
           <td>
             <div class="ui form">
               <div class="field">
-                <textarea placeholder="添加评论…" v-model="contents" rows="3"></textarea>
+                <textarea placeholder="添加评论…" v-model="event_fields.contents" rows="3"></textarea>
               </div>
             </div>
           </td>
@@ -151,7 +150,7 @@ export default {
         <tr>
           <td>添加附件</td>
           <td>
-            <file-upload v-model="file" />
+            <files-upload v-model="event_fields.files" />
           </td>
         </tr>
       </tbody>
@@ -192,7 +191,7 @@ export default {
           :action="Action[event.action]"
           :category="Category[application.category]"
           :contents="event.contents"
-          :file="event.file"
+          :files="event.files.map(pk => files.get(pk)!)"
         />
       </div>
     </div>
