@@ -65,7 +65,7 @@ export interface Budget {
   pk: number;
   user: number;
   department: number;
-  level: number;
+  active: boolean;
   reason: string;
   description: string;
   plan: number;

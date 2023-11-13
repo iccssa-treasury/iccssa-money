@@ -57,7 +57,7 @@ export default {
     },
     filtered_budgets() {
       return this.budgets
-        .filter((budget) => budget.department === this.fields.department)
+        .filter((budget) => budget.department === this.fields.department && budget.active)
         .map((budget) => ({ value: budget.pk, text: budget.reason }));
     }
   },
@@ -106,7 +106,7 @@ export default {
       <div class="fields">
         <div class="three wide field" :class="{ error: errors.fields.department.length > 0 }">
           <label>所属部门</label>
-          <select class="ui selection dropdown" v-model="fields.department">
+          <select class="ui selection dropdown" v-model="fields.department" @change="fields.budget=filtered_budgets[0].value;">
             <option v-for="choice in choices(Department)" :value="choice.value">{{ choice.text }}</option>
           </select>
         </div>

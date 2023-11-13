@@ -115,6 +115,13 @@ export default {
           <td>收入金额</td>
           <td>{{ received_amount(budget.received_actual, Currency.英镑) }}</td>
         </tr>
+        <tr>
+          <td>状态</td>
+          <td :class="budget.active?'positive':'warning'">
+            <i class="icon" :class="budget.active ? 'check' : 'lock'"></i>
+            {{ budget.active ? '已启用' : '已停用' }}
+          </td>
+        </tr>
       </tbody>
     </table>
     <sui-progress 

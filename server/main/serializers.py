@@ -43,17 +43,17 @@ class BudgetBasicSerializer(serializers.ModelSerializer):
   class Meta:
     model = Budget
     fields = [
-      'pk', 'user', 'department', 'level', 'reason', 'amount', 'spent',
+      'pk', 'user', 'department', 'active', 'reason', 'amount', 'spent', 'received'
     ]
     read_only_fields = [
-      'pk', 'user', 'department', 'level', 'reason', 'amount', 'spent',
+      'pk', 'user', 'department', 'active', 'reason', 'amount', 'spent', 'received'
     ]
 
 class BudgetManagerSerializer(serializers.ModelSerializer):
   class Meta:
     model = Budget
     fields = [
-      'pk', 'user', 'department', 'level', 'reason', 'description',
+      'pk', 'user', 'department', 'active', 'reason', 'description',
       'plan', 'amount', 'profit', 'spent', 'spent_actual',
       'received', 'received_actual',
     ]

@@ -54,9 +54,10 @@ export default {
           <tr>
             <th class="two wide">部门</th>
             <th class="two wide">负责人</th>
-            <th>项目</th>
-            <th class="three wide">预算额度</th>
-            <th class="three wide">支出总额</th>
+            <th class="four wide">项目</th>
+            <th>预算额度</th>
+            <th>支出总额</th>
+            <th>收入总额</th>
           </tr>
         </thead>
         <tbody>
@@ -70,13 +71,14 @@ export default {
               </td>
               <td>{{ budget.reason }}</td>
               <td>{{ budget.amount > 0 ? display_amount(Currency.英镑, budget.amount) : '—' }}</td>
-              <td>{{ display_amount(Currency.英镑, budget.spent) }}</td>
+              <td>{{ budget.spent > 0 ? display_amount(Currency.英镑, budget.spent) : '—' }}</td>
+              <td>{{ budget.received > 0 ? display_amount(Currency.英镑, budget.received) : '—' }}</td>
             </tr>
           </router-link>
         </tbody>
         <tfoot v-if="user?.budgeteer" class="full width">
           <tr>
-            <th colspan="5">
+            <th colspan="6">
               <sui-checkbox toggle v-model="show_all" label="显示全部" />
             </th>
           </tr>

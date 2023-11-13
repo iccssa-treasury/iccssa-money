@@ -65,8 +65,8 @@ class File(models.Model):
     ])
 
     def __str__(self):
-        filename = self.filename if self.filename else self.file.name
-        return f'{self.user} {filename}'
+        filename = f' [{self.filename}] ' if self.filename else ' '
+        return f'{self.user}{filename}{self.file.name}'
 
 class Destination(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -100,7 +100,7 @@ def display_amount(currency_display: str, amount: int) -> str:
 class Budget(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
-    level = models.IntegerField(choices=Level.choices, default=Level.AWAIT_PRESIDENT)
+    active = models.BooleanField(default=True)
 
     reason = models.TextField()
     description = models.TextField(null=True, blank=True)
@@ -115,13 +115,17 @@ class Budget(models.Model):
     received_actual = models.JSONField(default=received_json_default)
 
     def __str__(self):
-        return f'[{self.get_department_display()}] - {self.reason} -{display_amount("", self.amount)} +{display_amount("", self.profit)}'
+        active = ' ' if self.active else ' [x] '
+        amount = f'/{display_amount("", self.amount)}' if self.amount else ''
+        profit = f'/{display_amount("", self.profit)}' if self.profit else ''
+        return f'[{self.get_department_display()}] -{active}{self.reason} \
+            -{display_amount("", self.spent)}{amount} +{display_amount("", self.received)}{profit}'
 
 class Application(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)
     department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
     category = models.IntegerField(choices=Category.choices, default=Category.REIMBURSEMENT)
-    budget = models.ForeignKey(Budget, on_delete=models.PROTECT, null=True, blank=True)
+    budget = models.ForeignKey(Budget, on_delete=models.PROTECT)
 
     # Destination fields
     platform = models.IntegerField(choices=Platform.choices, default=Platform.BANK_GBP)
@@ -139,8 +143,7 @@ class Application(models.Model):
     level = models.IntegerField(choices=Level.choices, default=Level.AWAIT_MEMBER)
     
     def __str__(self):
-        budgetary = '$' if self.budget else ''
-        return f'{budgetary}[{self.get_department_display()}] - {self.user} {self.get_category_display()} \
+        return f'[{self.get_department_display()}] - {self.user} {self.get_category_display()} \
             {display_amount(self.get_currency_display(), self.amount)}'
 
 class Event(models.Model):
@@ -160,7 +163,7 @@ class Income(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)
     department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
     category = models.IntegerField(choices=Source.choices, default=Source.CONTRACT)
-    budget = models.ForeignKey(Budget, on_delete=models.PROTECT, null=True, blank=True)
+    budget = models.ForeignKey(Budget, on_delete=models.PROTECT)
 
     currency = models.IntegerField(choices=Currency.choices, default=Currency.GBP)
     amount = models.IntegerField()
@@ -170,8 +173,7 @@ class Income(models.Model):
     level = models.IntegerField(choices=Level.choices, default=Level.ACCEPTED)
 
     def __str__(self):
-        budgetary = '$ ' if self.budget else ''
-        return f'{budgetary}[{self.get_department_display()}] - {self.reason} \
+        return f'[{self.get_department_display()}] - {self.reason} \
             {display_amount(self.get_currency_display(), self.amount)}'
 
 class Receipt(models.Model):
