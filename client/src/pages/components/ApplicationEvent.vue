@@ -2,10 +2,11 @@
 import { friendlyDate } from '@/dates';
 import { type File } from '@/api';
 
+import MarkdownContent from './MarkdownContent.vue';
 import FileLink from './FileLink.vue';
 
 export default {
-  components: { FileLink },
+  components: { MarkdownContent, FileLink },
   setup() {
     return { friendlyDate };
   },
@@ -63,7 +64,9 @@ export default {
       <div class="metadata">
         <span class="date">{{ date }}</span>
       </div>
-      <div class="text">{{ contents }}</div>
+      <div class="text">
+        <markdown-content :markdown="contents!" />
+      </div>
       <file-link v-for="file in files" :file="file" />
     </div>
   </div>

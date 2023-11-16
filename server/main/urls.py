@@ -26,4 +26,5 @@ urlpatterns = [
   path('application/<int:pk>/files/', views.ApplicationFilesView.as_view()),  # type: ignore
   path('income/<int:pk>/files/', views.IncomeFilesView.as_view()),  # type: ignore
   path('budget/<int:pk>/plan/', views.BudgetPlanView.as_view()),  # type: ignore
+  path('documentation/<str:section>/', views.DocumentationView.as_view()),  # type: ignore
 ]

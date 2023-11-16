@@ -6,10 +6,11 @@ import { FormErrors } from '@/errors';
 import { ApplicationFields, DestinationFields } from '@/forms';
 import { choices, Category, Department, Currency, Platform } from '@/enums';
 
+import DocumentationModal from './components/DocumentationModal.vue';
 import FilesUpload from './components/FilesUpload.vue';
 
 export default {
-  components: { FilesUpload },
+  components: { DocumentationModal, FilesUpload },
   setup() {
     return {
       user,
@@ -43,6 +44,13 @@ export default {
         contents: [],
         files: [],
       }),
+      documentation: {
+        category: false,
+        department: false,
+        business: false,
+        save_dest: false,
+        files: false,
+      },
     };
   },
   async created() {
@@ -156,7 +164,9 @@ export default {
       <h4 class="ui dividing header">基础信息</h4>
       <div class="fields">
         <div class="three wide field" :class="{ error: errors.fields.category.length > 0 }">
-          <label>财务类目</label>
+          <label>
+            <documentation-modal v-model="documentation.category" title="财务类目"/>
+          </label>
           <select class="ui selection dropdown" v-model="fields.category">
             <option v-for="choice in choices(Category)" :value="choice.value">{{ choice.text }}</option>
           </select>
@@ -168,7 +178,9 @@ export default {
       </div>
       <div class="fields">
         <div class="three wide field" :class="{ error: errors.fields.department.length > 0 }">
-          <label>所属部门</label>
+          <label>
+            <documentation-modal v-model="documentation.department" title="所属部门"/>
+          </label>
           <select class="ui selection dropdown" v-model="fields.department" @change="fields.budget=filtered_budgets[0].value;">
             <option v-for="choice in choices(Department)" :value="choice.value">{{ choice.text }}</option>
           </select>
@@ -204,8 +216,8 @@ export default {
           <sui-dropdown search selection v-model="select_dest" :options="filtered_destinations" placeholder="从现有账户中搜索…" />
         </div>
         <div class="one wide field">
-          <button class="ui icon button" :class="{ disabled: waiting, loading: waiting }" @click.prevent="fill">
-            <i class="sync alternate icon"></i>
+          <button class="ui basic icon button" :class="{ disabled: waiting, loading: waiting }" @click.prevent="fill">
+            <i class="level down alternate icon"></i>
           </button>
         </div>
       </div>
@@ -225,7 +237,9 @@ export default {
             @input="errors.fields.account_number.length = 0" />
         </div>
         <div v-if="!fields.platform" class="two wide field" :class="{ error: errors.fields.business.length > 0 }">
-          <label>Business</label>
+          <label>
+            <documentation-modal v-model="documentation.business" title="Business"/>
+          </label>
           <sui-checkbox toggle v-model="fields.business" />
         </div>
         <div v-if="fields.platform" class="ten wide field" :class="{ error: errors.fields.card_number.length > 0 }">
@@ -239,6 +253,7 @@ export default {
       </div>
       <div class="field">
         <sui-checkbox toggle v-model="save_dest" label="保存到我的账户列表" />
+        <documentation-modal v-model="documentation.save_dest" title="保存收款账户" hide />
       </div>
       <h4 class="ui dividing header">辅助信息</h4>
       <div class="field">
@@ -246,7 +261,9 @@ export default {
         <textarea placeholder="补充申请详细信息…" rows="10" style="resize: vertical" v-model="fields.contents"></textarea>
       </div>
       <div class="field">
-        <label>附件</label>
+        <label>
+          <documentation-modal v-model="documentation.files" title="附件"/>
+        </label>
         <files-upload v-model="fields.files" />
       </div>
       <button class="ui primary button" :class="{ disabled: waiting, loading: waiting }" @click.prevent="submit">
