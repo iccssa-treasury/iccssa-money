@@ -80,7 +80,6 @@ export interface Budget {
 export interface Application {
   pk: number;
   user: number;
-  department: number;
   category: number;
   budget: number;
   platform: number;
@@ -109,7 +108,6 @@ export interface Event {
 export interface Income {
   pk: number;
   user: number;
-  department: number;
   category: number;
   budget: number;
   currency: number;

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { api, type Income, type User } from '@/api';
+import { api, type Income, type User, type Budget } from '@/api';
 import { messageErrors, user } from '@/state';
 import { Department, Level, display_amount, level_status, level_icon } from '@/enums';
 import LoadingText from './components/LoadingText.vue';
@@ -19,6 +19,7 @@ export default {
       incomes: new Array<Income>(),
       show_completed: false,
       users: new Map<number, string>(),
+      budgets: new Map<number, Budget>(),
     };
   },
   async created() {
@@ -27,9 +28,10 @@ export default {
       if (data) user.value = data as User;
       // console.log(data);
       this.incomes = (await api.get('main/incomes/')).data as Income[];
-      for (const user of (await api.get('accounts/users/')).data as User[]) {
+      for (const user of (await api.get('accounts/users/')).data as User[])
         this.users.set(user.pk, user.name??'');
-      }
+      for (const budget of (await api.get('main/budgets/')).data as Budget[])
+        this.budgets.set(budget.pk, budget);
       this.loading = false;
     } catch (e) {
       messageErrors(e);
@@ -63,7 +65,7 @@ export default {
           <router-link custom v-for="income in display" :key="income.pk" :to="`/income/${income.pk}/`"
             v-slot="{ navigate }">
             <tr @click="navigate">
-              <td>{{ Department[income.department] }}</td>
+              <td>{{ Department[budgets.get(income.budget)!.department] }}</td>
               <td>{{ income.reason }}</td>
               <td>{{ display_amount(income.currency, income.amount) }}</td>
               <td :class="level_status(income.level)">

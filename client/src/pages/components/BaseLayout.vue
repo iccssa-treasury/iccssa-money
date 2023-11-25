@@ -54,7 +54,7 @@ export default {
     </div>
     <div class="pusher" :class="{ dimmed: sidebarActive }" @click="onClickPusher">
       <div class="flex-container">
-        <div class="ui borderless navigation menu" :class="{ inverted: landingPage, orange: landingPage }">
+        <div class="ui borderless navigation menu" :class="{ inverted: landingPage, red : landingPage }">
           <div v-if="large" class="ui container">
             <slot name="navigation"></slot>
           </div>

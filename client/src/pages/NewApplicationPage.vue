@@ -25,11 +25,11 @@ export default {
       fields: new ApplicationFields(),
       destinations: new Array(),
       budgets: new Array<Budget>(),
+      cross_department: false,
       select_dest: null as { value: Destination, text: String } | null,
       save_dest: false,
       errors: new FormErrors<ApplicationFields>({
         category: [],
-        department: [],
         budget: [],
         platform: [],
         name: [],
@@ -64,7 +64,6 @@ export default {
         text: `${dest.star ? '★ ' : ''}${destination_display(dest)}`, 
       }));
       this.budgets = (await api.get('main/budgets/')).data as Budget[];
-      this.fields.department = data.department;
       this.fields.budget = this.filtered_budgets[0].value;
     } catch (e) {
       messageErrors(e);
@@ -89,9 +88,11 @@ export default {
       return this.destinations.filter((dest) => dest.value.platform === this.fields.platform);
     },
     filtered_budgets() {
-      return this.budgets
-        .filter((budget) => budget.department === this.fields.department && budget.active)
-        .map((budget) => ({ value: budget.pk, text: budget.reason }));
+      return this.cross_department ?
+        this.budgets.filter((budget) => budget.active)
+          .map((budget) => ({ value: budget.pk, text: `${Department[budget.department]} - ${budget.reason}` })) :
+        this.budgets.filter((budget) => budget.department === user.value?.department && budget.active)
+          .map((budget) => ({ value: budget.pk, text: budget.reason }));
     }
   },
   methods: {
@@ -108,7 +109,7 @@ export default {
         if (this.save_dest) await this.save();
         // manual clear
         this.fields = new ApplicationFields();
-        this.fields.department = user.value.department;
+        this.cross_department = false;
         this.fields.budget = this.filtered_budgets[0].value;
         this.select_dest = null;
         this.save_dest = false;
@@ -163,7 +164,7 @@ export default {
     <form class="ui form">
       <h4 class="ui dividing header">基础信息</h4>
       <div class="fields">
-        <div class="three wide field" :class="{ error: errors.fields.category.length > 0 }">
+        <div class="two wide field" :class="{ error: errors.fields.category.length > 0 }">
           <label>
             <documentation-modal v-model="documentation.category" title="财务类目"/>
           </label>
@@ -171,29 +172,25 @@ export default {
             <option v-for="choice in choices(Category)" :value="choice.value">{{ choice.text }}</option>
           </select>
         </div>
-        <div class="ten wide field" :class="{ error: errors.fields.reason.length > 0 }">
+        <div class="twelve wide field" :class="{ error: errors.fields.reason.length > 0 }">
           <label>申请事由</label>
           <input placeholder="资金用途..." v-model="fields.reason" @input="errors.fields.reason.length = 0" />
         </div>
+        <div class="two wide field">
+          <label>
+            <documentation-modal v-model="documentation.department" title="外部预算"/>
+          </label>
+          <sui-checkbox toggle v-model="cross_department" />
+        </div>
       </div>
       <div class="fields">
-        <div class="three wide field" :class="{ error: errors.fields.department.length > 0 }">
-          <label>
-            <documentation-modal v-model="documentation.department" title="所属部门"/>
-          </label>
-          <select class="ui selection dropdown" v-model="fields.department" @change="fields.budget=filtered_budgets[0].value;">
-            <option v-for="choice in choices(Department)" :value="choice.value">{{ choice.text }}</option>
-          </select>
-        </div>
-        <div class="seven wide field" :class="{ error: errors.fields.budget.length > 0 }">
+        <div class="five wide field" :class="{ error: errors.fields.budget.length > 0 }">
           <label>预算方案</label>
           <select class="ui selection dropdown" v-model="fields.budget">
             <option v-for="choice in filtered_budgets" :value="choice.value">{{ choice.text }}</option>
           </select>
         </div>
-      </div>
-      <div class="fields">
-        <div class="seven wide field" :class="{ error: errors.fields.amount.length > 0 }">
+        <div class="five wide field" :class="{ error: errors.fields.amount.length > 0 }">
           <label>申请金额</label>
           <input placeholder="0.00" v-model="computed_amount" @input="errors.fields.amount.length = 0">
         </div>

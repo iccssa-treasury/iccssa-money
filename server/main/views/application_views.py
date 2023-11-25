@@ -16,7 +16,7 @@ def has_access_to_application(user: User, application: Application) -> bool:
     return True
   # Commitees can access all applications from their department.
   if user.approval_level == Privilege.COMMITTEE:
-    return user.department == application.user.department or user.department == application.department
+    return user.department == application.user.department or user.department == application.budget.department
   # Members can only access their own applications.
   return user == application.user
 
@@ -42,7 +42,7 @@ class UserApplicationsView(views.APIView):
     return Response(ApplicationSerializer(queryset, many=True).data, status.HTTP_200_OK)
 
 
-def can_post_application(user: User, department: int) -> bool:
+def can_post_application(user: User) -> bool:
   # if not isinstance(user, User):
   #   return False
   # Only members can post applications.
@@ -72,12 +72,10 @@ class NewApplicationView(views.APIView):
   @method_decorator(transaction.atomic)
   def post(self, request: Request) -> Response:
     user = request.user
-    department = request.data.get('department')
-    if not can_post_application(user, int(department)):
+    if not can_post_application(user):
       self.permission_denied(request)
     serializer = ApplicationSerializer(data={
       'user': user.pk,
-      'department': department,
       'category': request.data.get('category'),
       'budget': request.data.get('budget'),
       'platform': request.data.get('platform'),
@@ -154,7 +152,7 @@ def can_post_event(user: User, application: Application, action: int) -> bool:
     if user.approval_level != application.level - 1:
       return False
     # Commitees can only approve or reject applications from their own department.
-    return user.approval_level <= Privilege.PRESIDENT or user.department == application.department
+    return user.approval_level <= Privilege.PRESIDENT or user.department == application.budget.department
   elif action == Action.CREATE or action == Action.CANCEL:
     # User can only create or cancel their own incomplete applications.
     return user == application.user and application.level > Level.COMPLETED

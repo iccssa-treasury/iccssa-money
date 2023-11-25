@@ -123,7 +123,6 @@ class Budget(models.Model):
 
 class Application(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)
-    department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
     category = models.IntegerField(choices=Category.choices, default=Category.REIMBURSEMENT)
     budget = models.ForeignKey(Budget, on_delete=models.PROTECT)
 
@@ -143,7 +142,7 @@ class Application(models.Model):
     level = models.IntegerField(choices=Level.choices, default=Level.AWAIT_MEMBER)
     
     def __str__(self):
-        return f'[{self.get_department_display()}] - {self.user} {self.get_category_display()} \
+        return f'[{self.budget.get_department_display()}] - {self.user} {self.get_category_display()} \
             {display_amount(self.get_currency_display(), self.amount)}'
 
 class Event(models.Model):
@@ -161,7 +160,6 @@ class Event(models.Model):
 
 class Income(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT)
-    department = models.IntegerField(choices=Department.choices, default=Department.UNDEFINED)
     category = models.IntegerField(choices=Source.choices, default=Source.CONTRACT)
     budget = models.ForeignKey(Budget, on_delete=models.PROTECT)
 
@@ -173,7 +171,7 @@ class Income(models.Model):
     level = models.IntegerField(choices=Level.choices, default=Level.ACCEPTED)
 
     def __str__(self):
-        return f'[{self.get_department_display()}] - {self.reason} \
+        return f'[{self.budget.get_department_display()}] - {self.reason} \
             {display_amount(self.get_currency_display(), self.amount)}'
 
 class Receipt(models.Model):

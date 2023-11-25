@@ -22,9 +22,9 @@ export default {
       waiting: false,
       fields: new IncomeFields(),
       budgets: new Array<Budget>(),
+      cross_department: false,
       errors: new FormErrors<IncomeFields>({
         category: [],
-        department: [],
         budget: [],
         currency: [],
         amount: [],
@@ -40,7 +40,6 @@ export default {
       if (data) user.value = data as User;
       // console.log(data);
       this.budgets = (await api.get('main/budgets/')).data as Budget[];
-      this.fields.department = data.department;
       this.fields.budget = this.filtered_budgets[0].value;
     } catch (e) {
       messageErrors(e);
@@ -56,9 +55,11 @@ export default {
       },
     },
     filtered_budgets() {
-      return this.budgets
-        .filter((budget) => budget.department === this.fields.department && budget.active)
-        .map((budget) => ({ value: budget.pk, text: budget.reason }));
+      return this.cross_department ?
+        this.budgets.filter((budget) => budget.active)
+          .map((budget) => ({ value: budget.pk, text: `${Department[budget.department]} - ${budget.reason}` })) :
+        this.budgets.filter((budget) => budget.department === user.value?.department && budget.active)
+          .map((budget) => ({ value: budget.pk, text: budget.reason }));
     }
   },
   methods: {
@@ -73,7 +74,7 @@ export default {
         });
         // manual clear
         this.fields = new IncomeFields();
-        this.fields.department = user.value.department;
+        this.cross_department = false;
         this.fields.budget = this.filtered_budgets[0].value;
         this.success = true;
       } catch (e) {
@@ -92,42 +93,37 @@ export default {
     <form class="ui form">
       <h4 class="ui dividing header">基础信息</h4>
       <div class="fields">
-        <div class="three wide field" :class="{ error: errors.fields.category.length > 0 }">
+        <div class="two wide field" :class="{ error: errors.fields.category.length > 0 }">
           <label>财务类目</label>
           <select class="ui selection dropdown" v-model="fields.category">
             <option v-for="choice in choices(Source)" :value="choice.value">{{ choice.text }}</option>
           </select>
         </div>
-        <div class="ten wide field" :class="{ error: errors.fields.reason.length > 0 }">
+        <div class="twelve wide field" :class="{ error: errors.fields.reason.length > 0 }">
           <label>合同标题</label>
           <input placeholder="实体名称..." v-model="fields.reason" @input="errors.fields.reason.length = 0" />
         </div>
+        <div class="two wide field">
+          <label>外部预算</label>
+          <sui-checkbox toggle v-model="cross_department" />
+        </div>
       </div>
       <div class="fields">
-        <div class="three wide field" :class="{ error: errors.fields.department.length > 0 }">
-          <label>所属部门</label>
-          <select class="ui selection dropdown" v-model="fields.department" @change="fields.budget=filtered_budgets[0].value;">
-            <option v-for="choice in choices(Department)" :value="choice.value">{{ choice.text }}</option>
-          </select>
-        </div>
-        <div class="seven wide field" :class="{ error: errors.fields.budget.length > 0 }">
+        <div class="five wide field" :class="{ error: errors.fields.budget.length > 0 }">
           <label>预算方案</label>
           <select class="ui selection dropdown" v-model="fields.budget">
             <option v-for="choice in filtered_budgets" :value="choice.value">{{ choice.text }}</option>
           </select>
         </div>
-      </div>
-      <div class="field" :class="{ error: errors.fields.amount.length > 0 || errors.fields.currency.length > 0 }">
-        <label>应收金额</label>
-        <div class="fields">
-          <div class="seven wide field" :class="{ error: errors.fields.amount.length > 0 }">
-            <input placeholder="0.00" v-model="computed_amount" @input="errors.fields.amount.length = 0">
-          </div>
-          <div class="three wide field" :class="{ error: errors.fields.currency.length > 0 }">
-            <select class="ui selection dropdown" v-model="fields.currency">
-              <option v-for="choice in choices(Currency)" :value="choice.value">{{ choice.text }}</option>
-            </select>
-          </div>
+        <div class="five wide field" :class="{ error: errors.fields.amount.length > 0 }">
+          <label>应收金额</label>
+          <input placeholder="0.00" v-model="computed_amount" @input="errors.fields.amount.length = 0">
+        </div>
+        <div class="three wide field" :class="{ error: errors.fields.currency.length > 0 }">
+          <label>币种</label>
+          <select class="ui selection dropdown" v-model="fields.currency">
+            <option v-for="choice in choices(Currency)" :value="choice.value">{{ choice.text }}</option>
+          </select>
         </div>
       </div>
       <h4 class="ui dividing header">辅助信息</h4>

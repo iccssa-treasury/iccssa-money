@@ -63,7 +63,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
   class Meta:
     model = Application
     fields = [
-      'pk', 'user', 'department', 'category', 'budget', 'platform', 
+      'pk', 'user', 'category', 'budget', 'platform', 
       'name', 'sort_code', 'account_number', 'business',
       'card_number', 'bank_name', 'currency', 
       'amount', 'reason', 'level',
@@ -87,8 +87,8 @@ class IncomeSerializer(serializers.ModelSerializer):
   class Meta:
     model = Income
     fields = [
-      'pk', 'user', 'department', 'category', 
-      'budget', 'currency', 'amount', 'reason',
+      'pk', 'user', 'category', 'budget', 
+      'currency', 'amount', 'reason',
       'received', 'level',
     ]
     read_only_fields = ['pk']

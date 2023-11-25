@@ -163,7 +163,7 @@ def notify_application_event(event: Event, application_level: int):
     notified.add(owner.email)
   # notify approvers
   level_access = Q(approval_level=application_level-1)
-  department_access = Q(department=application.department) | Q(approval_level__lte=Privilege.PRESIDENT)
+  department_access = Q(department=application.budget.department) | Q(approval_level__lte=Privilege.PRESIDENT)
   approvers = User.objects.filter(level_access & department_access)
   for approver in approvers:
     if approver.notification_settings.get('approval') and approver not in notified:

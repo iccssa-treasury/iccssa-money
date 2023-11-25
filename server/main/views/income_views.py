@@ -56,7 +56,6 @@ class NewIncomeView(views.APIView):
       self.permission_denied(request)
     serializer = IncomeSerializer(data={
       'user': user.pk,
-      'department': request.data.get('department'),
       'category': request.data.get('category'),
       'budget': request.data.get('budget'),
       'currency': request.data.get('currency'),

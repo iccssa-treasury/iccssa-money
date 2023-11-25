@@ -79,6 +79,12 @@ export default {
         this.receipt_fields.amount = Math.round(value * 100);
       },
     },
+    can_comment() {
+      return this.receipt_fields.contents || this.has_file;
+    },
+    has_file() {
+      return this.receipt_fields.files.filter(f => f.file !== null).length > 0;
+    }
   },
   methods: {
     async receipt(income: string, action: number) {
@@ -126,7 +132,7 @@ export default {
       <tbody>
         <tr>
           <td class="three wide">所属部门</td>
-          <td>{{ Department[income.department] }}</td>
+          <td>{{ Department[budget?.department!] }}</td>
         </tr>
         <tr>
           <td>负责人</td>
@@ -134,7 +140,12 @@ export default {
         </tr>
         <tr>
           <td>预算方案</td>
-          <td>{{ budget?.reason ?? "[未分配]" }}</td>
+          <td>
+            {{ budget?.reason }}
+            <router-link v-if="user.budgeteer" :to="`/budget/${income.budget}/`">
+              <i class="external alternate icon" />
+            </router-link>
+          </td>
         </tr>
         <tr>
           <td>应收金额</td>
@@ -191,9 +202,10 @@ export default {
               @click="receipt(pk, 5)">
               <i class="check icon"></i>完成
             </button>
-            <button v-if="!can_receive" class="ui right floated primary button" :class="{ disabled: waiting, loading: waiting }"
+            <button v-if="can_comment && !can_receive" class="ui right floated primary button" :class="{ disabled: waiting, loading: waiting }"
               @click="receipt(pk, 0)">
-              <i class="comment icon"></i>评论
+              <i :class="has_file ? 'file alternate' : 'comment'" class="icon"></i>
+              {{ receipt_fields.contents ? '评论' : '提交' }}
             </button>
             <button v-if="can_receive" class="ui right floated green button" :class="{ disabled: waiting, loading: waiting }"
               @click="receipt(pk, 0)">

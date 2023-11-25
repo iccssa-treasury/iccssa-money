@@ -55,9 +55,9 @@ export default {
             <th class="two wide">部门</th>
             <th class="two wide">负责人</th>
             <th class="four wide">项目</th>
-            <th>预算额度</th>
             <th>支出总额</th>
             <th>收入总额</th>
+            <th>状态</th>
           </tr>
         </thead>
         <tbody>
@@ -70,9 +70,12 @@ export default {
                 {{ users.get(budget.user) }}
               </td>
               <td>{{ budget.reason }}</td>
-              <td>{{ budget.amount > 0 ? display_amount(Currency.英镑, budget.amount) : '—' }}</td>
               <td>{{ budget.spent > 0 ? display_amount(Currency.英镑, budget.spent) : '—' }}</td>
               <td>{{ budget.received > 0 ? display_amount(Currency.英镑, budget.received) : '—' }}</td>
+              <td :class="budget.active?'positive':'warning'">
+                <i class="icon" :class="budget.active ? 'check' : 'lock'"></i>
+                {{ budget.active ? '已启用' : '已停用' }}
+              </td>
             </tr>
           </router-link>
         </tbody>

@@ -53,7 +53,7 @@ export default {
     can_approve() {
       if (user.value === undefined || this.application === null) return false;
       return user.value.approval_level === this.application.level - 1 &&
-        (user.value.approval_level <= 2 || user.value.department === this.application.department);
+        (user.value.approval_level <= 2 || user.value.department === this.budget?.department);
     },
     can_cancel() {
       if (user.value === undefined || this.application === null) return false;
@@ -62,6 +62,12 @@ export default {
     can_complete() {
       if (user.value === undefined || this.application === null) return false;
       return user.value.approval_level === 1 && this.application.level === 1;
+    },
+    can_comment() {
+      return this.event_fields.contents || this.has_file;
+    },
+    has_file() {
+      return this.event_fields.files.filter(f => f.file !== null).length > 0;
     }
   },
   methods: {
@@ -105,11 +111,16 @@ export default {
       <tbody>
         <tr>
           <td class="three wide">所属部门</td>
-          <td>{{ Department[application.department] }}</td>
+          <td>{{ Department[budget?.department!] }}</td>
         </tr>
         <tr>
           <td>预算方案</td>
-          <td>{{ budget?.reason ?? "[未分配]" }}</td>
+          <td>
+            {{ budget?.reason }}
+            <router-link v-if="user.budgeteer" :to="`/budget/${application.budget}/`">
+              <i class="external alternate icon" />
+            </router-link>
+          </td>
         </tr>
         <tr>
           <td>申请金额</td>
@@ -173,9 +184,10 @@ export default {
               @click="event(pk, 4)">
               <i class="times icon"></i>删除
             </button>
-            <button class="ui right floated primary button" :class="{ disabled: waiting, loading: waiting }"
+            <button v-if="can_comment" class="ui right floated primary button" :class="{ disabled: waiting, loading: waiting }"
               @click="event(pk, 0)">
-              <i class="comment icon"></i>评论
+              <i :class="has_file ? 'file alternate' : 'comment'" class="icon"></i>
+              {{ event_fields.contents ? '评论' : '提交' }}
             </button>
           </td>
         </tr>

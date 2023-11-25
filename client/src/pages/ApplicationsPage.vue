@@ -1,5 +1,5 @@
 <script lang="ts">
-import { api, type Application, type User } from '@/api';
+import { api, type Application, type User, type Budget } from '@/api';
 import { messageErrors, user } from '@/state';
 import { Category, Department, Level, display_amount, level_status, level_icon } from '@/enums';
 import LoadingText from './components/LoadingText.vue';
@@ -19,6 +19,7 @@ export default {
       applications: new Array<Application>(),
       show_irrelevant: false,
       users: new Map<number, string>(),
+      budgets: new Map<number, Budget>(),
     };
   },
   async created() {
@@ -27,9 +28,10 @@ export default {
       if (data) user.value = data as User;
       // console.log(data);
       this.applications = (await api.get('main/applications/')).data as Application[];
-      for (const user of (await api.get('accounts/users/')).data as User[]) {
+      for (const user of (await api.get('accounts/users/')).data as User[])
         this.users.set(user.pk, user.name??'');
-      }
+      for (const budget of (await api.get('main/budgets/')).data as Budget[])
+        this.budgets.set(budget.pk, budget);
       this.loading = false;
     } catch (e) {
       messageErrors(e);
@@ -68,7 +70,7 @@ export default {
             v-slot="{ navigate }">
             <tr @click="navigate">
               <td>{{ Category[application.category] }}</td>
-              <td>{{ Department[application.department] }}</td>
+              <td>{{ Department[budgets.get(application.budget)!.department] }}</td>
               <td>
                 <!-- <img class="ui bordered avatar image" :src="users.get(application.user)?.avatar" /> -->
                 {{ users.get(application.user) }}

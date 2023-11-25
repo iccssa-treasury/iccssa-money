@@ -26,7 +26,6 @@ export class DestinationFields {
 
 export class ApplicationFields {
   category: number = 0;
-  department: number = 0;
   budget: number = 0;
   platform: number = 0;
   name: string = '';
@@ -51,7 +50,6 @@ export class EventFields {
 
 export class IncomeFields {
   category: number = 0;
-  department: number = 0;
   budget: number = 0;
   currency: number = 0;
   amount: number = 0;

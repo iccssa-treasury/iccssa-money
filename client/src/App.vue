@@ -93,8 +93,9 @@ export default {
       </a>
     </template>
     <template #footer>
-      <div class="ui right aligned small inverted link list">
+      <div class="ui small inverted link list">
         <a class="item" href="https://iccssa.org/">© 2023-2024 帝国理工中国学生学者联谊会</a>
+        <i class="item">v0.24.277 beta</i>
       </div>
     </template>
     <template #modals>
