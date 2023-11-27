@@ -20,6 +20,9 @@ for arg in "$@"; do
   esac
 done
 
+echo "Shutting down $service..." && \
+sudo systemctl stop $service && \
+
 if [ "$run_git" = true ]; then
   echo "Updating git repository..." && \
   cd $path && \
@@ -42,7 +45,7 @@ echo "Migrating database..." && \
 python3 manage.py migrate && \
 deactivate && \
 
-echo "Restarting $service..." && \
+echo "Starting $service..." && \
 sudo systemctl restart $service && \
 
 cd $path && \

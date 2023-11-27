@@ -11,13 +11,13 @@ class FileSerializer(serializers.ModelSerializer):
 
 class DestinationValidator:
   def __call__(self, attrs):
-    platform = attrs['platform']
+    platform = attrs.get('platform')
     if platform == Platform.BANK_GBP:
       if not attrs['sort_code']:
         raise ValidationError({'sort_code': 'This field is required.'})
       if not attrs['account_number']:
         raise ValidationError({'account_number': 'This field is required.'})
-    else:
+    elif platform:
       if not attrs['card_number']:
         raise ValidationError({'card_number': 'This field is required.'})
       if platform == Platform.BANK_CNY:

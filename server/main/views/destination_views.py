@@ -48,3 +48,24 @@ class DestinationView(views.APIView):
     if not destination.public and user != destination.user:
       self.permission_denied(request)
     return Response(DestinationSerializer(destination).data, status.HTTP_200_OK)
+
+  # Edit a destination for current user.
+  def patch(self, request: Request, pk: int) -> Response:
+    user = request.user
+    destination = get_object_or_404(Destination, pk=pk)
+    if user != destination.user:
+      self.permission_denied(request)
+    serializer = DestinationSerializer(destination, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data, status.HTTP_200_OK)
+  
+  # Delete a destination for current user.
+  def delete(self, request: Request, pk: int) -> Response:
+    user = request.user
+    destination = get_object_or_404(Destination, pk=pk)
+    if user != destination.user:
+      self.permission_denied(request)
+    destination.delete()
+    return Response(status=status.HTTP_204_NO_CONTENT)
+  

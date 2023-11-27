@@ -8,11 +8,12 @@ import SignUpModal from './pages/components/SignUpModal.vue';
 import LogInModal from './pages/components/LogInModal.vue';
 import SessionModal from './pages/components/SessionModal.vue';
 import SettingsModal from './pages/components/SettingsModal.vue';
+import DocumentationModal from './pages/components/DocumentationModal.vue';
 import defaultAvatar from '@/assets/default-avatar.png';
 
 // See: https://stackoverflow.com/a/66258242
 export default {
-  components: { PopupMessages, BaseLayout, SignUpModal, LogInModal, SessionModal, SettingsModal },
+  components: { PopupMessages, BaseLayout, SignUpModal, LogInModal, SessionModal, SettingsModal, DocumentationModal },
   setup() {
     return { user };
   },
@@ -23,6 +24,7 @@ export default {
       logInModalIsActive: false,
       sessionModalIsActive: false,
       settingsModalIsActive: false,
+      versionModalIsActive: false,
     };
   },
   methods: {
@@ -95,7 +97,7 @@ export default {
     <template #footer>
       <div class="ui small inverted link list">
         <a class="item" href="https://iccssa.org/">© 2023-2024 帝国理工中国学生学者联谊会</a>
-        <i class="item">v0.24.277 beta</i>
+        <a class="link item" @click="versionModalIsActive = true"><i>v0.25.452 beta</i></a>
       </div>
     </template>
     <template #modals>
@@ -103,6 +105,7 @@ export default {
       <log-in-modal v-model="logInModalIsActive" />
       <session-modal v-model="sessionModalIsActive" />
       <settings-modal v-model="settingsModalIsActive" />
+      <documentation-modal v-model="versionModalIsActive" title="更新日志" hide no_icon />
     </template>
   </base-layout>
   <popup-messages />

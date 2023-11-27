@@ -14,6 +14,7 @@ export default {
     modelValue: { type: Boolean, required: true },
     title: { type: String, required: true },
     hide: { type: Boolean, default: false },
+    no_icon: { type: Boolean, default: false },
   },
   emits: ['update:modelValue'],
   data() {
@@ -43,7 +44,7 @@ export default {
 
 <template>
   <span v-if="!hide">{{ title }}&nbsp;</span>
-  <i class="question circle outline link icon" @click="modalActive = true" />
+  <i v-if="!no_icon" class="question circle outline link icon" @click="modalActive = true" />
   
   <sui-modal size="tiny" v-model="modalActive">
     <sui-modal-header>{{ title }}</sui-modal-header>

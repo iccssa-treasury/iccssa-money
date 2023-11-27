@@ -8,6 +8,7 @@ import { createApp } from 'vue';
 import { createRouter, createWebHistory } from 'vue-router';
 import App from './App.vue';
 import LandingPage from './pages/LandingPage.vue';
+import DestinationsPage from './pages/DestinationsPage.vue';
 import UserApplicationsPage from './pages/UserApplicationsPage.vue';
 import NewApplicationPage from './pages/NewApplicationPage.vue';
 import ApplicationsPage from './pages/ApplicationsPage.vue';
@@ -24,6 +25,7 @@ const router = createRouter({
   history: createWebHistory(),
   routes: [
     { path: '/', component: LandingPage},
+    { path: '/me/destinations/', component: DestinationsPage },
     { path: '/me/applications/', component: UserApplicationsPage },
     { path: '/applications/new/', component: NewApplicationPage },
     { path: '/applications/', component: ApplicationsPage },
