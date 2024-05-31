@@ -8,6 +8,7 @@ Thumbs.db
 .venv
 env/
 venv/
+cssa_vars
 
 # Nginx
 nginx.conf

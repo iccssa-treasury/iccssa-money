@@ -21,6 +21,8 @@ DEBUG = (os.environ.get('CSSA_DEBUG', '') == '1')
 DEV_PATH = os.environ.get('CSSA_DEV_PATH', '')
 ALLOWED_HOSTS = ['*'] if DEBUG else os.environ.get('CSSA_ALLOWED_HOSTS', '').split()
 FX_API_KEY = os.environ.get('CSSA_FX_API_KEY', '')
+MAIL_API_KEY = os.environ.get('CSSA_MAIL_API_KEY', '')
+MAIL_TEMPLATE_UUID = os.environ.get('CSSA_MAIL_TEMPLATE_UUID', '')
 
 # Application definition
 INSTALLED_APPS = [
